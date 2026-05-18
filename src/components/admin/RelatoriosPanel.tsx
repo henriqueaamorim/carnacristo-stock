@@ -132,14 +132,14 @@ export function RelatoriosPanel() {
           />
         </label>
         <label className="text-sm text-[#233d4d]">
-          Usuário
+          Vendedores
           <select
             value={sellerId}
             onChange={(e) => setSellerId(e.target.value)}
             disabled={usersLoading}
             className="mt-1 block min-w-[16rem] max-w-full rounded-lg border border-slate-600 bg-orange-200 px-2 py-1 text-sm text-[#233d4d] disabled:opacity-50"
           >
-            <option value="">Todos os usuários</option>
+            <option value="">Todos os vendedores</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {sellerOptionLabel(u)}
