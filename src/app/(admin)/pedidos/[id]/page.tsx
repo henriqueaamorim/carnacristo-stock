@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { PaymentMethod } from "@/types";
+import { formatOrderStatus } from "@/utils/orderStatus";
 
 const PAYMENTS: PaymentMethod[] = [
   "pix",
@@ -163,7 +164,7 @@ export default function AdminPedidoDetalhePage() {
             Pedido #{order.order_id_display}
           </h1>
           <p className="text-sm text-[#233d4d]">
-            Vendedor: {seller?.email ?? order.seller_id} · {order.status}
+            Vendedor: {seller?.email ?? order.seller_id} · {formatOrderStatus(order.status)}
           </p>
         </div>
         {order.status === "completed" ? (

@@ -4,6 +4,13 @@ import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import type { ProductDTO } from "@/types";
 
+/** Textos do cadastro (novo produto) — edite aqui */
+const CREATE_SUCCESS_MSG = "✅ Produto cadastrado com sucesso!";
+const CREATE_ERROR_FALLBACK = "❌ Não foi possível cadastrar o produto. Tente novamente.";
+
+const UPDATE_SUCCESS_MSG = "Produto atualizado.";
+const DELETE_SUCCESS_MSG = "Produto excluído.";
+
 export function ProductsAdminPanel() {
   const [products, setProducts] = useState<ProductDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,19 +43,20 @@ export function ProductsAdminPanel() {
 
   async function onCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
     setMsg(null);
     setErr(null);
     setBusy(true);
-    const fd = new FormData(e.currentTarget);
+    const fd = new FormData(form);
     try {
       const res = await fetch("/api/produtos", { method: "POST", body: fd });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setErr(body.error || "Erro ao salvar");
+        setErr(body.error ? `❌ ${body.error}` : CREATE_ERROR_FALLBACK);
         return;
       }
-      setMsg("Produto cadastrado.");
-      e.currentTarget.reset();
+      setMsg(CREATE_SUCCESS_MSG);
+      form.reset();
       await load();
     } finally {
       setBusy(false);
@@ -69,10 +77,10 @@ export function ProductsAdminPanel() {
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setErr(body.error || "Erro ao atualizar");
+        setErr(body.error ? `❌ ${body.error}` : "❌ Não foi possível atualizar o produto. Tente novamente.");
         return;
       }
-      setMsg("Produto atualizado.");
+      setMsg(UPDATE_SUCCESS_MSG);
       setEditing(null);
       await load();
     } finally {
@@ -80,19 +88,25 @@ export function ProductsAdminPanel() {
     }
   }
 
-  async function onDelete(id: string) {
-    if (!confirm("Excluir este produto?")) return;
+  async function onDelete(row: ProductDTO) {
+    if (
+      !confirm(
+        `Excluir o produto "${row.name}"? Esta ação não pode ser desfeita.`,
+      )
+    )
+      return;
     setMsg(null);
     setErr(null);
     setBusy(true);
     try {
-      const res = await fetch(`/api/produtos/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/produtos/${row.id}`, { method: "DELETE" });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setErr(body.error || "Erro ao excluir");
+        setErr(body.error || "Erro ao excluir produto");
         return;
       }
-      setMsg("Produto excluído.");
+      setMsg(DELETE_SUCCESS_MSG);
+      if (editing?.id === row.id) setEditing(null);
       await load();
     } finally {
       setBusy(false);
@@ -159,24 +173,40 @@ export function ProductsAdminPanel() {
             disabled={busy}
             className="sm:col-span-2 rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
           >
-            {busy ? "Salvando…" : "Cadastrar"}
+            {busy ? "Salvando…" : "Cadastrar produto"}
           </button>
         </form>
       </section>
 
       {msg ? (
-        <p className="text-sm text-emerald-400" role="status">
+        <p
+          className="rounded-lg border-2 border-emerald-600 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm"
+          role="status"
+        >
           {msg}
         </p>
       ) : null}
       {err ? (
-        <p className="text-sm text-red-400" role="alert">
+        <p
+          className="rounded-lg border-2 border-red-600 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900 shadow-sm"
+          role="alert"
+        >
           {err}
         </p>
       ) : null}
 
       <section>
-        <h2 className="mb-4 text-lg font-medium text-[#233d4d]">Catálogo</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-medium text-[#233d4d]">Catálogo</h2>
+          <button
+            type="button"
+            disabled={loading || busy}
+            onClick={() => void load()}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          >
+            {loading ? "Atualizando…" : "Atualizar lista"}
+          </button>
+        </div>
         {loading ? (
           <p className="text-[#233d4d]">Carregando…</p>
         ) : (
@@ -221,15 +251,21 @@ export function ProductsAdminPanel() {
                     <td className="p-3 text-right">
                       <button
                         type="button"
-                        className="mr-2 text-emerald-400 hover:underline"
-                        onClick={() => setEditing(p)}
+                        disabled={busy}
+                        className="mr-2 text-emerald-400 hover:underline disabled:opacity-50"
+                        onClick={() => {
+                          setEditing(p);
+                          setMsg(null);
+                          setErr(null);
+                        }}
                       >
                         Editar
                       </button>
                       <button
                         type="button"
-                        className="text-red-400 hover:underline"
-                        onClick={() => void onDelete(p.id)}
+                        disabled={busy}
+                        className="text-red-400 hover:underline disabled:opacity-50"
+                        onClick={() => void onDelete(p)}
                       >
                         Excluir
                       </button>
@@ -313,7 +349,8 @@ export function ProductsAdminPanel() {
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  className="flex-1 rounded-lg border border-slate-600 py-2 text-slate-200"
+                  disabled={busy}
+                  className="flex-1 rounded-lg border border-slate-600 py-2 text-slate-200 disabled:opacity-50"
                   onClick={() => setEditing(null)}
                 >
                   Cancelar
@@ -323,7 +360,7 @@ export function ProductsAdminPanel() {
                   disabled={busy}
                   className="flex-1 rounded-lg bg-emerald-600 py-2 font-medium text-white disabled:opacity-50"
                 >
-                  Salvar
+                  {busy ? "Salvando…" : "Salvar"}
                 </button>
               </div>
             </form>

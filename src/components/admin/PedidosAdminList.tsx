@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  formatOrderStatus,
+  ORDER_STATUS_LABEL,
+  type OrderStatus,
+} from "@/utils/orderStatus";
 
 type OrderRow = {
   id: string;
@@ -88,8 +93,11 @@ export function PedidosAdminList() {
             className="mt-1 block rounded-lg border border-slate-600 bg-orange-200 px-2 py-1 text-[#233d4d]"
           >
             <option value="all">Todos</option>
-            <option value="completed">Finalizado</option>
-            <option value="cancelled">Cancelado</option>
+            {(Object.keys(ORDER_STATUS_LABEL) as OrderStatus[]).map((s) => (
+              <option key={s} value={s}>
+                {ORDER_STATUS_LABEL[s]}
+              </option>
+            ))}
           </select>
         </label>
         <button
@@ -111,10 +119,10 @@ export function PedidosAdminList() {
         <p className="text-slate-400">Carregando…</p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="min-w-full text-left text-sm text-[#233d4d]">
+          <table className="min-w-full text-left text-sm text-[#233d4d] px-8">
             <thead className="border-b border-slate-700 bg-orange-200">
               <tr>
-                <th className="p-2">#</th>
+                <th className="p-2">ID</th>
                 <th className="p-2">Título</th>
                 <th className="p-2">Vendedor</th>
                 <th className="p-2">Pagamento</th>
@@ -129,8 +137,8 @@ export function PedidosAdminList() {
                 <tr key={o.id} className="border-b border-slate-800">
                   <td className="p-2 font-mono text-xs">{o.order_id_display}</td>
                   <td className="p-2">{o.title}</td>
-                  <td className="p-2 text-xs text-slate-400">
-                    {o.seller?.email ?? o.seller_id}
+                  <td className="p-2">
+                    {o.seller?.full_name?.trim() || o.seller?.email || "—"}
                   </td>
                   <td className="p-2">{o.payment_method}</td>
                   <td className="p-2">
@@ -139,7 +147,7 @@ export function PedidosAdminList() {
                       currency: "BRL",
                     })}
                   </td>
-                  <td className="p-2">{o.status}</td>
+                  <td className="p-2">{formatOrderStatus(o.status)}</td>
                   <td className="p-2 text-xs text-slate-500">
                     {new Date(o.created_at).toLocaleString("pt-BR")}
                   </td>
