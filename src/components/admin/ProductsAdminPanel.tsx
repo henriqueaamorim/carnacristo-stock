@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
+import { BrlPriceInput } from "@/components/BrlPriceInput";
 import type { ProductDTO } from "@/types";
 
 /** Textos do cadastro (novo produto) — edite aqui */
@@ -18,6 +19,7 @@ export function ProductsAdminPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<ProductDTO | null>(null);
+  const [createFormKey, setCreateFormKey] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -57,6 +59,7 @@ export function ProductsAdminPanel() {
       }
       setMsg(CREATE_SUCCESS_MSG);
       form.reset();
+      setCreateFormKey((k) => k + 1);
       await load();
     } finally {
       setBusy(false);
@@ -118,6 +121,7 @@ export function ProductsAdminPanel() {
       <section>
         <h2 className="mb-4 text-lg font-medium text-[#233d4d]">Novo produto</h2>
         <form
+          key={createFormKey}
           onSubmit={onCreate}
           className="grid gap-4 rounded-xl border border-slate-700 bg-orange-200/50 p-6 sm:grid-cols-2"
         >
@@ -138,12 +142,8 @@ export function ProductsAdminPanel() {
             />
           </label>
           <label className="block text-sm text-[#233d4d]">
-            Preço (R$)
-            <input
-              name="price"
-              type="number"
-              step="0.01"
-              min="0.01"
+            Preço
+            <BrlPriceInput
               required
               className="mt-1 w-full rounded-lg border border-slate-600 bg-orange-200 px-3 py-2 text-[#233d4d]"
             />
@@ -316,13 +316,10 @@ export function ProductsAdminPanel() {
               </label>
               <label className="block text-sm text-slate-300">
                 Preço
-                <input
-                  name="price"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
+                <BrlPriceInput
+                  key={editing.id}
                   required
-                  defaultValue={editing.price}
+                  defaultValue={Number(editing.price)}
                   className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
                 />
               </label>

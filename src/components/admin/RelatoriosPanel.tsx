@@ -1,6 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { UserRole } from "@/types";
+
+type ProfileOption = {
+  id: string;
+  email: string | null;
+  full_name: string | null;
+  role: UserRole;
+};
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  admin: "Admin",
+  vendedor: "Vendedor",
+};
+
+function sellerOptionLabel(u: ProfileOption): string {
+  const name = u.full_name?.trim() || u.email || u.id;
+  return `${name} (${ROLE_LABEL[u.role]})`;
+}
 
 type ReportJson = {
   from: string;
@@ -35,9 +53,34 @@ export function RelatoriosPanel() {
   const [from, setFrom] = useState(init.from.slice(0, 16));
   const [to, setTo] = useState(init.to.slice(0, 16));
   const [sellerId, setSellerId] = useState("");
+  const [users, setUsers] = useState<ProfileOption[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
   const [data, setData] = useState<ReportJson | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setUsersLoading(true);
+      const res = await fetch("/api/admin/usuarios");
+      const body = (await res.json().catch(() => ({}))) as ProfileOption[] | { error?: string };
+      if (!cancelled) {
+        if (res.ok) {
+          const list = (body as ProfileOption[]).slice().sort((a, b) =>
+            sellerOptionLabel(a).localeCompare(sellerOptionLabel(b), "pt-BR"),
+          );
+          setUsers(list);
+        } else {
+          setUsers([]);
+        }
+        setUsersLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const qs = useMemo(() => {
     const u = new URLSearchParams();
@@ -89,13 +132,20 @@ export function RelatoriosPanel() {
           />
         </label>
         <label className="text-sm text-[#233d4d]">
-          Vendedor (UUID opcional)
-          <input
+          Usuário
+          <select
             value={sellerId}
             onChange={(e) => setSellerId(e.target.value)}
-            placeholder="seller_id"
-            className="mt-1 block w-64 rounded-lg border border-slate-600 bg-orange-200 px-2 py-1 font-mono text-xs text-[#233d4d]"
-          />
+            disabled={usersLoading}
+            className="mt-1 block min-w-[16rem] max-w-full rounded-lg border border-slate-600 bg-orange-200 px-2 py-1 text-sm text-[#233d4d] disabled:opacity-50"
+          >
+            <option value="">Todos os usuários</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {sellerOptionLabel(u)}
+              </option>
+            ))}
+          </select>
         </label>
         <button
           type="button"
