@@ -91,6 +91,13 @@ export function ProductsAdminPanel() {
     }
   }
 
+  const [fileStatus, setFileStatus] = useState("Nenhuma imagem selecionada");
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    setFileStatus(file ? `Imagem selecionada: ${file.name}` : "Nenhuma imagem selecionada");
+  }
+
   async function onDelete(row: ProductDTO) {
     if (
       !confirm(
@@ -119,36 +126,36 @@ export function ProductsAdminPanel() {
   return (
     <div className="space-y-10">
       <section>
-        <h2 className="mb-4 text-lg font-medium text-[#233d4d]">Novo produto</h2>
+        <h2 className="mb-4 text-base font-medium text-black">Novo produto</h2>
         <form
           key={createFormKey}
           onSubmit={onCreate}
-          className="grid gap-4 rounded-xl border border-slate-700 bg-orange-200/50 p-6 sm:grid-cols-2"
+          className="grid gap-4 rounded-[1.4rem] border-2 border-black bg-[#eab660] p-6 sm:grid-cols-2 shadow-[6px_6px_0_#000]"
         >
-          <label className="block text-sm text-[#233d4d] sm:col-span-2">
+          <label className="block text-base font-black text-black sm:col-span-2">
             Nome
             <input
               name="name"
               required
-              className="mt-1 w-full rounded-lg border border-slate-600 bg-orange-200 px-3 py-2 text-[#233d4d]"
+              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-sm text-[#233d4d] sm:col-span-2">
+          <label className="block text-base font-black text-black sm:col-span-2">
             Descrição
             <textarea
               name="description"
               rows={2}
-              className="mt-1 w-full rounded-lg border border-slate-600 bg-orange-200 px-3 py-2 text-[#233d4d]"
+              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-sm text-[#233d4d]">
+          <label className="block text-base font-black text-black">
             Preço
             <BrlPriceInput
               required
-              className="mt-1 w-full rounded-lg border border-slate-600 bg-orange-200 px-3 py-2 text-[#233d4d]"
+              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-sm text-[#233d4d]">
+          <label className="block text-base font-black text-black">
             Estoque
             <input
               name="stock_quantity"
@@ -156,22 +163,24 @@ export function ProductsAdminPanel() {
               min="0"
               step="1"
               required
-              className="mt-1 w-full rounded-lg border border-slate-600 bg-orange-200 px-3 py-2 text-[#233d4d]"
+              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-sm text-[#233d4d] sm:col-span-2">
+          <label className="block text-base font-black text-black sm:col-span-2">
             Imagem (opcional, até 5MB)
             <input
               name="file"
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              className="mt-1 w-full rounded-md border-2 border-black p-2.5 text-sm text-[#233d4d]"
+              onChange={handleFileChange}
             />
+            <p className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] p-2.5 text-sm text-[#233d4d]">
+              {fileStatus}</p>
           </label>
           <button
             type="submit"
             disabled={busy}
-            className="sm:col-span-2 rounded-lg bg-emerald-600 py-2 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="sm:col-span-2 rounded-lg border-2 border-black bg-[#abcf85] py-2 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
           >
             {busy ? "Salvando…" : "Cadastrar produto"}
           </button>
@@ -197,12 +206,12 @@ export function ProductsAdminPanel() {
 
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium text-[#233d4d]">Catálogo</h2>
+          <h2 className="text-base font-medium text-black">Catálogo</h2>
           <button
             type="button"
             disabled={loading || busy}
             onClick={() => void load()}
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+            className="rounded-lg border-2 border-black bg-[#abcf85] py-2 px-4 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
           >
             {loading ? "Atualizando…" : "Atualizar lista"}
           </button>
@@ -210,9 +219,9 @@ export function ProductsAdminPanel() {
         {loading ? (
           <p className="text-[#233d4d]">Carregando…</p>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-slate-700">
-            <table className="min-w-full text-left text-sm text-[#233d4d]">
-              <thead className="border-b border-slate-700 bg-orange-200">
+          <div className="overflow-x-auto rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+            <table className="min-w-full text-left text-base font-black text-black">
+              <thead className="border-b border-slate-700 bg-[#ea5342]">
                 <tr>
                   <th className="p-3">Foto</th>
                   <th className="p-3">Nome</th>
@@ -225,7 +234,7 @@ export function ProductsAdminPanel() {
                 {products.map((p, idx) => (
                   <tr key={p.id} className="border-b border-slate-800">
                     <td className="p-2">
-                      <div className="relative h-14 w-14 overflow-hidden rounded bg-slate-800">
+                      <div className="relative rounded-lg border-2 border-black shadow-[2px_2px_0_#000] h-14 w-14 overflow-hidden bg-slate-800">
                         {p.imageSignedUrl ? (
                           <Image
                             src={p.imageSignedUrl}
@@ -252,7 +261,7 @@ export function ProductsAdminPanel() {
                       <button
                         type="button"
                         disabled={busy}
-                        className="mr-2 text-emerald-400 hover:underline disabled:opacity-50"
+                        className="mr-2 font-black text-black hover:underline disabled:opacity-50"
                         onClick={() => {
                           setEditing(p);
                           setMsg(null);
@@ -264,7 +273,7 @@ export function ProductsAdminPanel() {
                       <button
                         type="button"
                         disabled={busy}
-                        className="text-red-400 hover:underline disabled:opacity-50"
+                        className="text-[#ea5342] hover:underline disabled:opacity-50"
                         onClick={() => void onDelete(p)}
                       >
                         Excluir
@@ -287,78 +296,102 @@ export function ProductsAdminPanel() {
           }}
         >
           <div
-            className="w-full max-w-lg rounded-xl border border-slate-600 bg-slate-950 p-6 shadow-xl"
+            className="w-full max-w-lg"
             role="dialog"
             aria-modal="true"
             aria-labelledby="edit-product-title"
           >
-            <h3 id="edit-product-title" className="mb-4 text-lg font-semibold text-white">
-              Editar produto
-            </h3>
-            <form onSubmit={onUpdate} className="space-y-3">
-              <label className="block text-sm text-slate-300">
-                Nome
-                <input
-                  name="name"
-                  required
-                  defaultValue={editing.name}
-                  className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
-                />
-              </label>
-              <label className="block text-sm text-slate-300">
-                Descrição
-                <textarea
-                  name="description"
-                  rows={2}
-                  defaultValue={editing.description ?? ""}
-                  className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
-                />
-              </label>
-              <label className="block text-sm text-slate-300">
-                Preço
-                <BrlPriceInput
-                  key={editing.id}
-                  required
-                  defaultValue={Number(editing.price)}
-                  className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
-                />
-              </label>
-              <label className="block text-sm text-slate-300">
-                Estoque
-                <input
-                  name="stock_quantity"
-                  type="number"
-                  min="0"
-                  required
-                  defaultValue={editing.stock_quantity}
-                  className="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-white"
-                />
-              </label>
-              <label className="block text-sm text-slate-300">
-                Nova imagem (opcional)
-                <input
-                  name="file"
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  className="mt-1 w-full text-sm"
-                />
-              </label>
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  disabled={busy}
-                  className="flex-1 rounded-lg border border-slate-600 py-2 text-slate-200 disabled:opacity-50"
-                  onClick={() => setEditing(null)}
+            <form
+              onSubmit={onUpdate}
+              className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]"
+            >
+              <div className="flex items-center justify-between border-b-2 border-black bg-[#ea5342] px-4 py-3">
+                <span
+                  id="edit-product-title"
+                  className="text-base font-black uppercase tracking-wide text-black"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className="flex-1 rounded-lg bg-emerald-600 py-2 font-medium text-white disabled:opacity-50"
-                >
-                  {busy ? "Salvando…" : "Salvar"}
-                </button>
+                  Editar Produto
+                </span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-3 w-3 rounded-full border-2 border-black bg-[#f8dcc0]"
+                    aria-hidden="true"
+                  />
+                  <span
+                    className="h-3 w-3 rounded-full border-2 border-black bg-[#f8dcc0]"
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+              <div className="space-y-4 p-6">
+                <label className="block text-base font-black text-black">
+                  Nome
+                  <input
+                    name="name"
+                    required
+                    defaultValue={editing.name}
+                    className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+                  />
+                </label>
+                <label className="block text-base font-black text-black">
+                  Descrição
+                  <textarea
+                    name="description"
+                    rows={2}
+                    defaultValue={editing.description ?? ""}
+                    className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+                  />
+                </label>
+                <label className="block text-base font-black text-black">
+                  Preço
+                  <BrlPriceInput
+                    key={editing.id}
+                    required
+                    defaultValue={Number(editing.price)}
+                    className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+                  />
+                </label>
+                <label className="block text-base font-black text-black">
+                  Estoque
+                  <input
+                    name="stock_quantity"
+                    type="number"
+                    min="0"
+                    required
+                    defaultValue={editing.stock_quantity}
+                    className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+                  />
+                </label>
+                <label className="block text-base font-black text-black">
+                  Nova imagem (opcional)
+                  <input
+                    name="file"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleFileChange}
+                    className="sr-only"
+                  />
+                  <p className="mt-1 w-full cursor-pointer rounded-lg border-2 border-black bg-[#fff4e8] p-2.5 text-sm text-[#233d4d]">
+                    {fileStatus}
+                  </p>
+                </label>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="flex-1 rounded-lg border-2 border-black py-2 font-black text-black disabled:opacity-50"
+                    onClick={() => setEditing(null)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={busy}
+                    className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-2 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
+                  >
+                    {busy ? "Salvando…" : "Salvar"}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

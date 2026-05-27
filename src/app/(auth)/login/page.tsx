@@ -31,7 +31,7 @@ export default function LoginPage() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-4">
-      <h1 className="mb-6 text-center text-2xl font-bold text-[#233d4d]">
+      <h1 className="mb-6 text-center text-base font-black uppercase tracking-wide text-black">
         Carnacristo Stock
       </h1>
       <form
@@ -79,7 +79,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl border-2 border-black bg-[#f7f3ea] py-2 font-black text-black shadow-[4px_4px_0_#000] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0_#000] disabled:opacity-50"
+            className="w-full bg-[#04915c] rounded-xl border-2 border-black py-2 font-black text-black shadow-[4px_4px_0_#000] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[3px_3px_0_#000] disabled:opacity-50"
           >
             {loading ? "Entrando…" : "Entrar"}
           </button>

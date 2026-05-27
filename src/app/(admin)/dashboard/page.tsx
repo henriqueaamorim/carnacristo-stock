@@ -45,8 +45,8 @@ const cards: {
 export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
-      <h1 className="text-xl font-semibold text-[#233d4d]">Painel administrativo</h1>
-      <p className="max-w-2xl text-slate-600">
+      <h1 className="text-xl text-base font-black text-black">Painel administrativo</h1>
+      <p className="max-w-2xl text-base font-medium text-black">
         Gerencie catálogo, vendedores, pedidos e relatórios. O estoque é atualizado em tempo
         real para os vendedores via Supabase Realtime.
       </p>
@@ -55,19 +55,35 @@ export default function AdminDashboardPage() {
           <li key={href}>
             <Link
               href={href}
-              className="flex items-center justify-between gap-4 rounded-xl border border-slate-700 bg-orange-200/50 p-5 shadow-[3px_3px_0px_2px_rgba(35,61,77,1)] transition hover:border-orange-600/50"
+              className="block overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#233d4d] transition hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[5px_5px_0_#233d4d]"
             >
-              <div className="min-w-0 flex-1">
-                <span className="block font-bold text-[#233d4d]">{label}</span>
-                <p className="mt-1 text-sm text-[#233d4d]">{desc}</p>
+              <div className="flex items-center justify-between border-b-2 border-black bg-[#ea5342] px-4 py-3">
+                <span className="block text-base font-black text-black">{label}</span>
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-3 w-3 rounded-full border-2 border-black bg-[#f8dcc0]"
+                    aria-hidden="true"
+                  />
+                  <span
+                    className="h-3 w-3 rounded-full border-2 border-black bg-[#f8dcc0]"
+                    aria-hidden="true"
+                  />
+                </div>
               </div>
-              <Icon
-                weight="fill"
-                color={ICON_COLOR}
-                size={ICON_SIZE}
-                aria-hidden
-                className="shrink-0"
-              />
+              <div className="flex items-center justify-between gap-4 p-5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-black">{desc}</p>
+                </div>
+                <div className="rounded-xl border-2 border-black bg-[#fff4e8] p-3 shadow-[3px_3px_0_#000]">
+                  <Icon
+                    weight="fill"
+                    color={ICON_COLOR}
+                    size={ICON_SIZE}
+                    aria-hidden
+                    className="shrink-0"
+                  />
+                </div>
+              </div>
             </Link>
           </li>
         ))}
