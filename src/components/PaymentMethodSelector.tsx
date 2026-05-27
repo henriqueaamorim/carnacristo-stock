@@ -27,15 +27,18 @@ type Props = {
 
 export function PaymentMethodSelector({ value, onChange }: Props) {
   return (
-    <fieldset className="space-y-2">
-      <legend className="mb-2 text-sm font-medium text-[#233d4d]">
-        Forma de pagamento
-      </legend>
-      <div className="grid gap-2 sm:grid-cols-2">
+    <fieldset className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+      <legend className="sr-only">Forma de pagamento</legend>
+      <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
+        <p className="text-sm font-black uppercase tracking-wide text-black">
+          Forma de pagamento
+        </p>
+      </div>
+      <div className="grid gap-2 p-4 sm:grid-cols-2">
         {ORDER.map((m) => (
           <label
             key={m}
-            className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-600 bg-orange-200/50 px-3 py-2 text-[#233d4d] has-[:checked]:border-emerald-500 has-[:checked]:bg-orange-200"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d] has-[:checked]:bg-[#abcf85]"
           >
             <input
               type="radio"
@@ -43,9 +46,9 @@ export function PaymentMethodSelector({ value, onChange }: Props) {
               value={m}
               checked={value === m}
               onChange={() => onChange(m)}
-              className="h-4 w-4 accent-emerald-500"
+              className="h-4 w-4 accent-emerald-600"
             />
-            <span>{LABELS[m]}</span>
+            <span className="font-black text-black">{LABELS[m]}</span>
           </label>
         ))}
       </div>

@@ -155,12 +155,12 @@ export default function AdminPedidoDetalhePage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.4rem] border-2 border-black bg-[#eab660] p-4 shadow-[6px_6px_0_#000]">
         <div>
-          <Link href="/pedidos" className="text-sm text-[#233d4d] hover:underline">
+          <Link href="/pedidos" className="text-sm font-black text-[#233d4d] hover:underline">
             ← Pedidos
           </Link>
-          <h1 className="mt-2 text-xl font-semibold text-[#233d4d]">
+          <h1 className="mt-2 text-xl font-black text-black">
             Pedido #{order.order_id_display}
           </h1>
           <p className="text-sm text-[#233d4d]">
@@ -172,7 +172,7 @@ export default function AdminPedidoDetalhePage() {
             type="button"
             disabled={busy}
             onClick={() => void cancelar()}
-            className="rounded-lg border border-red-700 px-4 py-2 text-sm text-red-600 bg-red-200 hover:bg-red-600/40 disabled:opacity-50"
+            className="rounded-lg border-2 border-black bg-[#f7b3a9] px-4 py-2 text-sm font-black text-black disabled:opacity-50"
           >
             Cancelar pedido
           </button>
@@ -180,18 +180,24 @@ export default function AdminPedidoDetalhePage() {
       </div>
 
       {msg ? (
-        <p className="text-sm text-[#233d4d]" role="status">
+        <p
+          className="rounded-lg border-2 border-emerald-600 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 shadow-sm"
+          role="status"
+        >
           {msg}
         </p>
       ) : null}
       {err ? (
-        <p className="text-sm text-red-400" role="alert">
+        <p
+          className="rounded-lg border-2 border-red-600 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900 shadow-sm"
+          role="alert"
+        >
           {err}
         </p>
       ) : null}
 
-      <section className="rounded-xl border border-slate-700 bg-orange-200/50 p-4">
-        <h2 className="mb-2 font-medium text-[#233d4d]">Itens atuais</h2>
+      <section className="rounded-[1.4rem] border-2 border-black bg-[#eab660] p-4 shadow-[6px_6px_0_#000]">
+        <h2 className="mb-2 font-black text-black">Itens atuais</h2>
         <ul className="space-y-1 text-sm text-[#233d4d]">
           {items.map((i) => (
             <li key={i.id}>
@@ -203,7 +209,7 @@ export default function AdminPedidoDetalhePage() {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-lg font-semibold text-[#233d4d]">
+        <p className="mt-3 text-lg font-black text-black">
           Total:{" "}
           {Number(order.total_amount).toLocaleString("pt-BR", {
             style: "currency",
@@ -213,23 +219,27 @@ export default function AdminPedidoDetalhePage() {
       </section>
 
       {order.status === "completed" ? (
-        <section className="rounded-xl border border-slate-700 bg-orange-200/50 p-6">
-          <h2 className="mb-4 font-medium text-[#233d4d]">Editar pedido (estoque recalculado)</h2>
-          <form onSubmit={salvarEdicao} className="space-y-4">
-            <label className="block text-sm text-[#233d4d]">
+        <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+          <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
+            <h2 className="font-black uppercase tracking-wide text-black">
+              Editar pedido (estoque recalculado)
+            </h2>
+          </div>
+          <form onSubmit={salvarEdicao} className="space-y-4 p-6">
+            <label className="block text-sm font-black text-black">
               Título
               <input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-600 bg-orange-200 px-3 py-2 text-[#233d4d]"
+                className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
               />
             </label>
-            <label className="block text-sm text-[#233d4d]">
+            <label className="block text-sm font-black text-black">
               Pagamento
               <select
                 value={editPay}
                 onChange={(e) => setEditPay(e.target.value as PaymentMethod)}
-                className="mt-1 w-full rounded-lg border border-slate-600 bg-orange-200 px-3 py-2 text-[#233d4d]"
+                className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
               >
                 {PAYMENTS.map((p) => (
                   <option key={p} value={p}>
@@ -240,11 +250,11 @@ export default function AdminPedidoDetalhePage() {
             </label>
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-medium text-[#233d4d]">Itens</span>
+                <span className="text-sm font-black text-black">Itens</span>
                 <button
                   type="button"
                   onClick={addLine}
-                  className="text-sm text-[#233d4d] hover:underline"
+                  className="rounded border-2 border-black bg-[#fff4e8] px-2 py-1 text-xs font-black text-black"
                 >
                   + linha
                 </button>
@@ -260,7 +270,7 @@ export default function AdminPedidoDetalhePage() {
                           prev.map((l, i) => (i === idx ? { ...l, productId: v } : l)),
                         );
                       }}
-                      className="min-w-[180px] flex-1 rounded-lg border border-slate-600 bg-orange-200 px-2 py-2 text-[#233d4d]"
+                      className="min-w-[180px] flex-1 rounded-lg border-2 border-black bg-[#fff4e8] px-2 py-2 text-[#233d4d]"
                     >
                       <option value="">— produto —</option>
                       {products.map((p) => (
@@ -279,11 +289,11 @@ export default function AdminPedidoDetalhePage() {
                           prev.map((l, i) => (i === idx ? { ...l, quantity: q } : l)),
                         );
                       }}
-                      className="w-24 rounded-lg border border-slate-600 bg-orange-200 px-2 py-2 text-[#233d4d]"
+                      className="w-24 rounded-lg border-2 border-black bg-[#fff4e8] px-2 py-2 text-[#233d4d]"
                     />
                     <button
                       type="button"
-                      className="text-red-400 hover:underline"
+                      className="rounded border-2 border-black px-2 py-1 text-xs font-black text-[#ea5342]"
                       onClick={() =>
                         setEditLines((prev) => prev.filter((_, i) => i !== idx))
                       }
@@ -297,7 +307,7 @@ export default function AdminPedidoDetalhePage() {
             <button
               type="submit"
               disabled={busy || editLines.length === 0}
-              className="rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white disabled:opacity-50"
+              className="rounded-lg border-2 border-black bg-[#abcf85] px-4 py-2 font-black text-black disabled:opacity-50"
             >
               Salvar edição
             </button>

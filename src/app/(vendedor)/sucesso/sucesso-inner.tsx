@@ -27,26 +27,32 @@ export default function SucessoInner() {
 
   return (
     <div className="space-y-6 text-center">
-      <div className="rounded-xl border border-slate-700 bg-orange-200/50 p-8">
-        <p className="text-lg text-[#233d4d]">Pedido finalizado com sucesso</p>
-        <p className="mt-2 text-2xl font-bold text-[#233d4d]">#{display}</p>
+      <div className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+        <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
+          <p className="text-sm font-black uppercase tracking-wide text-black">
+            Pedido finalizado com sucesso
+          </p>
+        </div>
+        <div className="p-8">
+        <p className="mt-2 text-2xl font-black text-black">#{display}</p>
         <p className="mt-4 text-[#233d4d]">
-          Total: <span className="font-medium">{totalFmt}</span>
+          Total: <span className="font-black">{totalFmt}</span>
         </p>
         <p className="mt-1 text-[#233d4d]">
-          Método: <span className="font-medium">{method}</span>
+          Método: <span className="font-black">{method}</span>
         </p>
+        </div>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
         <Link
           href="/novo-pedido"
-          className="rounded-lg bg-emerald-600 px-6 py-3 font-medium text-white hover:bg-emerald-500"
+          className="rounded-lg border-2 border-black bg-[#abcf85] px-6 py-3 font-black text-black hover:bg-emerald-500"
         >
           Novo pedido
         </Link>
         <Link
           href="/checkout"
-          className="rounded-lg border border-slate-600 px-6 py-3 text-[#233d4d] hover:bg-orange-200"
+          className="rounded-lg border-2 border-black bg-[#fff4e8] px-6 py-3 font-black text-black"
         >
           Voltar ao checkout
         </Link>

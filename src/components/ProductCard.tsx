@@ -23,8 +23,8 @@ export function ProductCard({ product, imagePriority = false }: Props) {
   const canAdd = stock > 0 && qty < stock;
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-slate-700 bg-orange-200/50 shadow-lg">
-      <div className="relative aspect-square w-full bg-orange-200">
+    <article className="flex flex-col overflow-hidden rounded-[1.2rem] border-2 border-black bg-[#eab660] shadow-[5px_5px_0_#000]">
+      <div className="relative aspect-square w-full border-b-2 border-black bg-[#fff4e8]">
         {product.imageSignedUrl ? (
           <Image
             src={product.imageSignedUrl}
@@ -44,19 +44,22 @@ export function ProductCard({ product, imagePriority = false }: Props) {
         )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
-        <h3 className="font-medium leading-tight text-[#233d4d]">
+        <h3 className="font-black leading-tight text-black">
           {product.name}
         </h3>
-        <p className="text-sm text-[#233d4d]">
+        <p className="text-sm font-black text-[#233d4d]">
           {Number(product.price).toLocaleString("pt-BR", {
             style: "currency",
             currency: "BRL",
           })}
         </p>
-        <p className="text-xs text-[#233d4d]">Estoque: {stock}</p>
+        <p className="text-xs font-semibold text-[#233d4d]">Estoque: {stock}</p>
 
         {msg ? (
-          <p className="text-xs text-amber-300" role="alert">
+          <p
+            className="rounded border-2 border-black bg-[#f7b3a9] px-2 py-1 text-xs font-semibold text-black"
+            role="alert"
+          >
             {msg}
           </p>
         ) : null}
@@ -64,7 +67,7 @@ export function ProductCard({ product, imagePriority = false }: Props) {
         <div className="mt-auto flex items-center gap-2">
           <button
             type="button"
-            className="rounded-lg bg-slate-700 px-3 py-2 text-lg leading-none text-white hover:bg-slate-600 disabled:opacity-40"
+            className="rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-lg leading-none text-black disabled:opacity-40"
             disabled={qty <= 0}
             onClick={() => {
               setMsg(null);
@@ -77,7 +80,7 @@ export function ProductCard({ product, imagePriority = false }: Props) {
           <span className="min-w-[2ch] text-center font-mono text-lg text-[#233d4d]">{qty}</span>
           <button
             type="button"
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-lg leading-none text-white hover:bg-emerald-500 disabled:opacity-40"
+            className="rounded-lg border-2 border-black bg-[#abcf85] px-3 py-2 text-lg leading-none text-black hover:bg-emerald-500 disabled:opacity-40"
             disabled={!canAdd}
             onClick={() => {
               if (qty + 1 > stock) {

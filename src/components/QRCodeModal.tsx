@@ -97,10 +97,24 @@ export function QRCodeModal({ open, onClose }: Props) {
         onClose();
       }}
     >
-      <div className="mx-auto flex h-full w-full max-w-md flex-col justify-center rounded-xl bg-orange-200/50 p-6">
-        <h2 id="pix-dialog-title" className="mb-4 text-center text-xl font-semibold text-[#233d4d]">
-          Pagamento PIX
-        </h2>
+      <div className="mx-auto flex h-full w-full max-w-md flex-col justify-center">
+        <div className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+          <div className="flex items-center justify-between border-b-2 border-black bg-[#ea5342] px-4 py-3">
+            <h2 id="pix-dialog-title" className="text-sm font-black uppercase tracking-wide text-black">
+              Pagamento PIX
+            </h2>
+            <div className="flex items-center gap-2">
+              <span
+                className="h-3 w-3 rounded-full border-2 border-black bg-[#f8dcc0]"
+                aria-hidden="true"
+              />
+              <span
+                className="h-3 w-3 rounded-full border-2 border-black bg-[#f8dcc0]"
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+          <div className="p-6">
 
         {loading && (
           <p className="text-center text-[#233d4d]" role="status">
@@ -109,7 +123,7 @@ export function QRCodeModal({ open, onClose }: Props) {
         )}
 
         {!loading && err && (
-          <p className="text-center text-red-400" role="alert">
+          <p className="rounded-lg border-2 border-red-600 bg-red-50 px-4 py-3 text-center text-red-900" role="alert">
             {err}
           </p>
         )}
@@ -126,7 +140,7 @@ export function QRCodeModal({ open, onClose }: Props) {
             <img
               src={data.signedUrl}
               alt="QR Code para pagamento PIX"
-              className="mx-auto mb-4 max-h-[55vh] w-auto rounded-lg bg-white p-2"
+              className="mx-auto mb-4 max-h-[55vh] w-auto rounded-lg border-2 border-black bg-white p-2 shadow-[4px_4px_0_#000]"
               loading="eager"
             />
             {data.description ? (
@@ -144,10 +158,12 @@ export function QRCodeModal({ open, onClose }: Props) {
           ref={closeBtnRef}
           type="button"
           onClick={onClose}
-          className="mt-auto w-full rounded-lg bg-emerald-600 py-3 font-medium text-white hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          className="mt-auto w-full rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
         >
           Fechar
         </button>
+          </div>
+        </div>
       </div>
     </dialog>
   );

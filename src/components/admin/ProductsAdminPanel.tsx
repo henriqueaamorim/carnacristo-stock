@@ -130,32 +130,32 @@ export function ProductsAdminPanel() {
         <form
           key={createFormKey}
           onSubmit={onCreate}
-          className="grid gap-4 rounded-[1.4rem] border-2 border-black bg-[#eab660] p-6 sm:grid-cols-2 shadow-[6px_6px_0_#000]"
+          className="grid w-full max-w-full gap-4 rounded-[1.4rem] border-2 border-black bg-[#eab660] p-6 sm:grid-cols-2 shadow-[6px_6px_0_#000]"
         >
-          <label className="block text-base font-black text-black sm:col-span-2">
+          <label className="block min-w-0 text-base font-black text-black sm:col-span-2">
             Nome
             <input
               name="name"
               required
-              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+              className="mt-1 block w-full min-w-0 rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-base font-black text-black sm:col-span-2">
+          <label className="block min-w-0 text-base font-black text-black sm:col-span-2">
             Descrição
             <textarea
               name="description"
               rows={2}
-              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+              className="mt-1 block w-full min-w-0 rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-base font-black text-black">
+          <label className="block min-w-0 text-base font-black text-black">
             Preço
             <BrlPriceInput
               required
-              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+              className="mt-1 block w-full min-w-0 rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-base font-black text-black">
+          <label className="block min-w-0 text-base font-black text-black">
             Estoque
             <input
               name="stock_quantity"
@@ -163,19 +163,21 @@ export function ProductsAdminPanel() {
               min="0"
               step="1"
               required
-              className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+              className="mt-1 block w-full min-w-0 rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
             />
           </label>
-          <label className="block text-base font-black text-black sm:col-span-2">
+          <label className="block min-w-0 text-base font-black text-black sm:col-span-2">
             Imagem (opcional, até 5MB)
             <input
               name="file"
               type="file"
               accept="image/png,image/jpeg,image/webp"
               onChange={handleFileChange}
+              className="sr-only"
             />
-            <p className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] p-2.5 text-sm text-[#233d4d]">
-              {fileStatus}</p>
+            <p className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] p-2.5 text-sm text-[#233d4d] break-words">
+              {fileStatus}
+            </p>
           </label>
           <button
             type="submit"

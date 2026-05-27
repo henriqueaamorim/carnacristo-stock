@@ -66,31 +66,31 @@ export function PedidosAdminList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-slate-700 bg-orange-200/50 p-4">
-        <label className="text-sm text-[#233d4d]">
+      <div className="flex flex-wrap items-end gap-3 rounded-[1.4rem] border-2 border-black bg-[#eab660] p-4 shadow-[6px_6px_0_#000]">
+        <label className="text-sm font-black text-black">
           De
           <input
             type="datetime-local"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="mt-1 block rounded-lg border border-slate-600 bg-orange-200 px-2 py-1 text-[#233d4d]"
+            className="mt-1 block rounded-lg border-2 border-black bg-[#fff4e8] px-2 py-1 text-[#233d4d]"
           />
         </label>
-        <label className="text-sm text-[#233d4d]">
+        <label className="text-sm font-black text-black">
           Até
           <input
             type="datetime-local"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="mt-1 block rounded-lg border border-slate-600 bg-orange-200 px-2 py-1 text-[#233d4d]"
+            className="mt-1 block rounded-lg border-2 border-black bg-[#fff4e8] px-2 py-1 text-[#233d4d]"
           />
         </label>
-        <label className="text-sm text-[#233d4d]">
+        <label className="text-sm font-black text-black">
           Status
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="mt-1 block rounded-lg border border-slate-600 bg-orange-200 px-2 py-1 text-[#233d4d]"
+            className="mt-1 block rounded-lg border-2 border-black bg-[#fff4e8] px-2 py-1 text-[#233d4d]"
           >
             <option value="all">Todos</option>
             {(Object.keys(ORDER_STATUS_LABEL) as OrderStatus[]).map((s) => (
@@ -103,58 +103,61 @@ export function PedidosAdminList() {
         <button
           type="button"
           onClick={() => void load()}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white"
+          className="rounded-lg border-2 border-black bg-[#abcf85] px-4 py-2 text-sm font-black text-black"
         >
           Atualizar
         </button>
       </div>
 
       {err ? (
-        <p className="text-sm text-red-400" role="alert">
+        <p
+          className="rounded-lg border-2 border-red-600 bg-red-50 p-4 text-sm font-semibold text-red-900 shadow-sm"
+          role="alert"
+        >
           {err}
         </p>
       ) : null}
 
       {loading ? (
-        <p className="text-slate-400">Carregando…</p>
+        <p className="text-[#233d4d]">Carregando…</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-700">
-          <table className="min-w-full text-left text-sm text-[#233d4d] px-8">
-            <thead className="border-b border-slate-700 bg-orange-200">
+        <div className="overflow-x-auto rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+          <table className="min-w-full text-left text-sm text-[#233d4d] p-4">
+            <thead className="border-b-2 border-black bg-[#ea5342] text-black p-4">
               <tr>
-                <th className="p-2">ID</th>
-                <th className="p-2">Título</th>
-                <th className="p-2">Vendedor</th>
-                <th className="p-2">Pagamento</th>
-                <th className="p-2">Total</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Data</th>
-                <th className="p-2" />
+                <th className="p-3 font-black">ID</th>
+                <th className="p-4 font-black">Título</th>
+                <th className="p-4 font-black">Vendedor</th>
+                <th className="p-4 font-black">Pagamento</th>
+                <th className="p-4 font-black">Total</th>
+                <th className="p-4 font-black">Status</th>
+                <th className="p-4 font-black">Data</th>
+                <th className="p-4" />
               </tr>
             </thead>
             <tbody>
               {rows.map((o) => (
-                <tr key={o.id} className="border-b border-slate-800">
-                  <td className="p-2 font-mono text-xs">{o.order_id_display}</td>
-                  <td className="p-2">{o.title}</td>
-                  <td className="p-2">
+                <tr key={o.id} className="border-b border-black/20">
+                  <td className="p-4 font-bold text-black">{o.order_id_display}</td>
+                  <td className="p-4 font-bold text-black">{o.title}</td>
+                  <td className="p-4 font-bold text-black">
                     {o.seller?.full_name?.trim() || o.seller?.email || "—"}
                   </td>
-                  <td className="p-2">{o.payment_method}</td>
-                  <td className="p-2">
+                  <td className="p-4 font-bold text-black">{o.payment_method}</td>
+                  <td className="p-4 font-bold text-black">
                     {Number(o.total_amount).toLocaleString("pt-BR", {
                       style: "currency",
                       currency: "BRL",
                     })}
                   </td>
-                  <td className="p-2">{formatOrderStatus(o.status)}</td>
-                  <td className="p-2 text-xs text-slate-500">
+                  <td className="p-4 font-bold text-black">{formatOrderStatus(o.status)}</td>
+                  <td className="p-4 font-bold text-black">
                     {new Date(o.created_at).toLocaleString("pt-BR")}
                   </td>
-                  <td className="p-2 text-right">
+                  <td className="p-4 text-right">
                     <Link
                       href={`/pedidos/${o.id}`}
-                      className="text-emerald-400 hover:underline"
+                      className="rounded border-2 border-black bg-[#abcf85] px-2 py-1 text-xs font-black text-black"
                     >
                       Detalhe
                     </Link>

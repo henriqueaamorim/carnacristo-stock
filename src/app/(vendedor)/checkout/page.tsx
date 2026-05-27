@@ -91,30 +91,39 @@ export default function CheckoutPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold text-[#233d4d]">Checkout</h1>
+      <h1 className="text-base font-black text-black">Checkout</h1>
 
-      <section className="rounded-xl border border-slate-700 bg-orange-200/50 p-4">
-        <h2 className="mb-2 text-sm font-medium text-[#233d4d]">Resumo</h2>
-        <p className="text-sm text-[#233d4d]">
-          Título: <span className="font-medium">{orderTitle || "—"}</span>
+      <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+        <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
+          <h2 className="text-sm font-black uppercase tracking-wide text-black">Resumo</h2>
+        </div>
+        <div className="p-4">
+        <p className="text-lg font-black text-black">
+          Título: <span className="font-black">{orderTitle || "—"}</span>
         </p>
-        <p className="mt-2 text-lg font-semibold text-[#233d4d]">
-          Total:{" "}
-          {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-        </p>
-        <ul className="mt-3 space-y-1 text-sm text-[#233d4d]">
+
+        <ol className="mt-3 list-inside list-decimal space-y-1 pl-4 text-sm font-black text-black">
           {lines.map((l) => (
             <li key={l.productId}>
               {l.name} × {l.quantity}
             </li>
           ))}
-        </ul>
+        </ol>
+
+        <p className="mt-2 text-lg font-black text-black">
+          Total:{" "}
+          {total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+        </p>
+        </div>
       </section>
 
       <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
 
       {err ? (
-        <p className="text-sm text-red-400" role="alert">
+        <p
+          className="rounded-lg border-2 border-red-600 bg-red-50 px-4 py-3 text-sm font-semibold text-red-900 shadow-sm"
+          role="alert"
+        >
           {err}
         </p>
       ) : null}
@@ -122,7 +131,7 @@ export default function CheckoutPage() {
       <div className="flex flex-col gap-3 sm:flex-row">
         <Link
           href="/novo-pedido"
-          className="rounded-lg border border-slate-600 px-4 py-3 text-center text-[#233d4d] hover:bg-orange-200"
+          className="rounded-lg border-2 border-black bg-[#fff4e8] px-4 py-3 text-center font-black text-black"
         >
           Voltar
         </Link>
@@ -130,7 +139,7 @@ export default function CheckoutPage() {
           type="button"
           disabled={busy}
           onClick={onFinalizar}
-          className="flex-1 rounded-lg bg-emerald-600 py-3 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+          className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
         >
           {busy ? "Processando…" : "Finalizar pedido"}
         </button>
