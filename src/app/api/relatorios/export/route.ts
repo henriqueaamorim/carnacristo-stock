@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/require-admin";
+import {
+  buildReportSnapshot,
+  sellerDisplayName,
+} from "@/lib/reports/build-report-snapshot";
+import { PAYMENT_METHODS, revenueByMethod } from "@/lib/reports/payment-labels";
 
 function escCell(v: string | number | null | undefined) {
   const s = v == null ? "" : String(v);
@@ -23,66 +28,18 @@ export async function GET(request: Request) {
     );
   }
 
-  let oq = g.supabase
-    .from("orders")
-    .select(
-      "id, order_id_display, title, seller_id, payment_method, total_amount, created_at",
-    )
-    .eq("status", "completed")
-    .gte("created_at", from)
-    .lte("created_at", to)
-    .order("created_at", { ascending: true });
-
-  if (sellerId) oq = oq.eq("seller_id", sellerId);
-
-  const { data: orders, error: oe } = await oq;
-  if (oe) {
-    return NextResponse.json({ error: oe.message }, { status: 500 });
+  const { data: snapshot, error } = await buildReportSnapshot(g.supabase, {
+    from,
+    to,
+    sellerId,
+  });
+  if (error || !snapshot) {
+    return NextResponse.json({ error: error ?? "Erro ao exportar relatório" }, { status: 500 });
   }
 
-  const orderList = orders ?? [];
-  const orderIds = orderList.map((o) => o.id);
+  const lines: string[] = ["# detalhe_pedidos"];
 
-  let items: {
-    order_id: string;
-    product_id: string;
-    quantity: number;
-    unit_price: number;
-    subtotal: number;
-  }[] = [];
-
-  if (orderIds.length > 0) {
-    const { data: it, error: ie } = await g.supabase
-      .from("order_items")
-      .select("order_id, product_id, quantity, unit_price, subtotal")
-      .in("order_id", orderIds);
-    if (ie) {
-      return NextResponse.json({ error: ie.message }, { status: 500 });
-    }
-    items = (it ?? []) as typeof items;
-  }
-
-  const pids = [...new Set(items.map((i) => i.product_id))];
-  const names: Record<string, string> = {};
-  if (pids.length > 0) {
-    const { data: prows } = await g.supabase
-      .from("products")
-      .select("id, name")
-      .in("id", pids);
-    for (const p of prows ?? []) names[p.id] = p.name;
-  }
-
-  const sellerIds = [...new Set(orderList.map((o) => o.seller_id))];
-  const sellers: Record<string, string> = {};
-  if (sellerIds.length > 0) {
-    const { data: profs } = await g.supabase
-      .from("profiles")
-      .select("id, email")
-      .in("id", sellerIds);
-    for (const p of profs ?? []) sellers[p.id] = p.email ?? p.id;
-  }
-
-  const header = [
+  const detailHeader = [
     "order_id",
     "order_id_display",
     "title",
@@ -98,11 +55,11 @@ export async function GET(request: Request) {
     "line_subtotal",
   ];
 
-  const lines: string[] = [header.map(escCell).join(",")];
+  lines.push(detailHeader.map(escCell).join(","));
 
-  const orderMap = new Map(orderList.map((o) => [o.id, o]));
+  const orderMap = new Map(snapshot.orders.map((o) => [o.id, o]));
 
-  for (const it of items) {
+  for (const it of snapshot.items) {
     const o = orderMap.get(it.order_id);
     if (!o) continue;
     lines.push(
@@ -111,12 +68,12 @@ export async function GET(request: Request) {
         o.order_id_display,
         o.title,
         o.seller_id,
-        sellers[o.seller_id] ?? "",
+        snapshot.sellerMetaById[o.seller_id]?.email ?? "",
         o.payment_method,
         o.total_amount,
         o.created_at,
         it.product_id,
-        names[it.product_id] ?? "",
+        snapshot.productNamesById[it.product_id] ?? "",
         it.quantity,
         it.unit_price,
         it.subtotal,
@@ -124,6 +81,39 @@ export async function GET(request: Request) {
         .map(escCell)
         .join(","),
     );
+  }
+
+  lines.push("");
+  lines.push("# pagamento_por_vendedor");
+  lines.push(
+    ["seller_id", "seller_name", ...PAYMENT_METHODS].map(escCell).join(","),
+  );
+  for (const seller of snapshot.paymentBySeller) {
+    const name = sellerDisplayName(seller);
+    const revenues = revenueByMethod(seller);
+    lines.push(
+      [seller.seller_id, name, ...PAYMENT_METHODS.map((m) => revenues[m])]
+        .map(escCell)
+        .join(","),
+    );
+  }
+
+  lines.push("");
+  lines.push("# produtos_por_vendedor");
+  lines.push(
+    ["seller_id", "seller_name", "product_id", "product_name", "quantity"]
+      .map(escCell)
+      .join(","),
+  );
+  for (const seller of snapshot.productUnitsBySeller) {
+    const name = sellerDisplayName(seller);
+    for (const product of seller.products) {
+      lines.push(
+        [seller.seller_id, name, product.product_id, product.product_name, product.quantity]
+          .map(escCell)
+          .join(","),
+      );
+    }
   }
 
   const csv = lines.join("\r\n");
