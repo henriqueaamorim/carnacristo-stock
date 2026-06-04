@@ -5,6 +5,10 @@ import { Providers } from "@/components/providers";
 export const metadata: Metadata = {
   title: "Carnacristo Stock",
   description: "Vendas e estoque centralizados",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+  },
   appleWebApp: { capable: true, title: "Carnacristo Stock" },
 };
 
