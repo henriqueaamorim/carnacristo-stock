@@ -1,24 +1,10 @@
 "use client";
 
 import type { PaymentMethod } from "@/types";
-
-const LABELS: Record<PaymentMethod, string> = {
-  pix: "PIX",
-  dinheiro: "Dinheiro",
-  credito: "Crédito",
-  debito: "Débito",
-  doacao: "Doação",
-  parceria: "Parceria",
-};
-
-const ORDER: PaymentMethod[] = [
-  "pix",
-  "dinheiro",
-  "credito",
-  "debito",
-  "doacao",
-  "parceria",
-];
+import {
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHOD_ORDER,
+} from "@/utils/paymentMethod";
 
 type Props = {
   value: PaymentMethod | null;
@@ -35,7 +21,7 @@ export function PaymentMethodSelector({ value, onChange }: Props) {
         </p>
       </div>
       <div className="grid gap-2 p-4 sm:grid-cols-2">
-        {ORDER.map((m) => (
+        {PAYMENT_METHOD_ORDER.map((m) => (
           <label
             key={m}
             className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d] has-[:checked]:bg-[#abcf85]"
@@ -48,7 +34,9 @@ export function PaymentMethodSelector({ value, onChange }: Props) {
               onChange={() => onChange(m)}
               className="h-4 w-4 accent-emerald-600"
             />
-            <span className="font-black text-black">{LABELS[m]}</span>
+            <span className="font-black text-black">
+              {PAYMENT_METHOD_LABELS[m]}
+            </span>
           </label>
         ))}
       </div>

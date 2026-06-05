@@ -1,17 +1,37 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 import { useCartStore } from "@/store/cartStore";
+import {
+  ORDER_TITLE_MIN_LENGTH,
+  validateOrderTitle,
+} from "@/utils/validation";
 
 export default function NovoPedidoPage() {
+  const router = useRouter();
   const { data: products, isLoading, error } = useProducts();
   const orderTitle = useCartStore((s) => s.orderTitle);
   const setOrderTitle = useCartStore((s) => s.setOrderTitle);
   const lines = useCartStore((s) => s.lines);
   const [localTitle, setLocalTitle] = useState(orderTitle);
+  const [titleError, setTitleError] = useState<string | null>(null);
+
+  function handleGoToCheckout() {
+    if (lines.length === 0) return;
+
+    const result = validateOrderTitle(localTitle);
+    if (!result.ok) {
+      setTitleError(result.message);
+      return;
+    }
+
+    setTitleError(null);
+    setOrderTitle(result.value);
+    router.push("/checkout");
+  }
 
   return (
     <div className="space-y-6">
@@ -35,18 +55,39 @@ export default function NovoPedidoPage() {
         </div>
         <div className="p-4">
           <label className="block text-sm font-black text-black">
-            Título do pedido
+            Título do pedido (obrigatório)
             <input
               type="text"
-              placeholder='Ex: "Venda Mesa 04"'
+              placeholder='Ex: "Maria do Rosario - Centro"'
               className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
               value={localTitle}
+              minLength={ORDER_TITLE_MIN_LENGTH}
+              aria-invalid={!!titleError}
+              aria-describedby={
+                titleError ? "order-title-error" : "order-title-hint"
+              }
               onChange={(e) => {
                 setLocalTitle(e.target.value);
                 setOrderTitle(e.target.value);
+                if (titleError) setTitleError(null);
               }}
             />
           </label>
+          <p
+            id="order-title-hint"
+            className="mt-1 text-xs text-[#233d4d]"
+          >
+            Mínimo {ORDER_TITLE_MIN_LENGTH} caracteres.
+          </p>
+          {titleError ? (
+            <p
+              id="order-title-error"
+              className="mt-2 rounded-lg border-2 border-red-600 bg-red-50 px-3 py-2 text-sm font-semibold text-red-900"
+              role="alert"
+            >
+              {titleError}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -68,17 +109,18 @@ export default function NovoPedidoPage() {
           Itens no carrinho:{" "}
           <span className="font-mono text-[#233d4d]">{lines.length}</span>
         </p>
-        <Link
-          href="/checkout"
+        <button
+          type="button"
+          onClick={handleGoToCheckout}
+          disabled={lines.length === 0}
           className={`inline-flex justify-center rounded-lg border-2 border-black px-4 py-3 text-center font-black ${
             lines.length === 0
-              ? "pointer-events-none bg-slate-300 text-slate-600"
+              ? "cursor-not-allowed bg-slate-300 text-slate-600"
               : "bg-[#abcf85] text-black hover:bg-emerald-500"
           }`}
-          aria-disabled={lines.length === 0}
         >
           Ir para checkout
-        </Link>
+        </button>
       </div>
     </div>
   );

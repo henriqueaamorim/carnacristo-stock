@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { isPaymentMethod, parseOrderItems } from "@/lib/order-items";
 import { requireAdmin } from "@/lib/require-admin";
+import { validateOrderTitle } from "@/utils/validation";
 
 export async function GET(request: Request) {
   const g = await requireAdmin();
@@ -95,8 +96,13 @@ export async function POST(request: Request) {
   const parsed = parseOrderItems(items);
   if (!parsed.ok) return parsed.response;
 
+  const titleResult = validateOrderTitle(title);
+  if (!titleResult.ok) {
+    return NextResponse.json({ error: titleResult.message }, { status: 400 });
+  }
+
   const { data, error } = await supabase.rpc("create_order_with_inventory", {
-    p_title: title,
+    p_title: titleResult.value,
     p_payment_method: paymentMethod,
     p_items: parsed.items,
   });
@@ -105,6 +111,18 @@ export async function POST(request: Request) {
     const msg = error.message ?? "";
     if (msg.includes("Estoque insuficiente")) {
       return NextResponse.json({ error: msg }, { status: 409 });
+    }
+    if (msg.includes("invalid_title")) {
+      return NextResponse.json(
+        { error: "O campo título do pedido está vazio." },
+        { status: 400 },
+      );
+    }
+    if (msg.includes("invalid_title_min_length")) {
+      return NextResponse.json(
+        { error: "O título do pedido deve ter no mínimo 5 caracteres." },
+        { status: 400 },
+      );
     }
     return NextResponse.json({ error: msg || "Erro ao criar pedido" }, { status: 400 });
   }

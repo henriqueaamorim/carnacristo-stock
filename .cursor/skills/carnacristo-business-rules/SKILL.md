@@ -70,8 +70,9 @@ Padronizar as regras de negocio do sistema para evitar divergencias entre produt
 
 - Se forma de pagamento selecionada for `PIX`, apos clicar em `Finalizar Pedido`:
   - abrir modal em tela cheia com QR Code PIX configurado pelo ADM,
-  - permitir fechamento manual do modal.
-- Ao fechar o modal PIX, seguir para confirmacao de sucesso.
+  - exibir botoes `Pago` e `Voltar`.
+- Ao clicar em `Pago`, concluir a venda (criar pedido, baixar estoque, computar em relatorios).
+- Ao clicar em `Voltar` (ou Escape), fechar o modal e retornar ao checkout sem criar pedido nem alterar estoque.
 
 ## Regras de Confirmacao de Venda
 
@@ -79,7 +80,7 @@ Padronizar as regras de negocio do sistema para evitar divergencias entre produt
   - exibir `Pedido Finalizado com Sucesso`.
 - Para PIX:
   - exibir modal primeiro,
-  - depois confirmar sucesso ao fechar modal.
+  - depois confirmar sucesso somente apos `Pago`.
 
 ## Regras de Edicao e Cancelamento de Pedido
 

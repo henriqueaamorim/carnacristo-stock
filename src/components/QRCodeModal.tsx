@@ -10,12 +10,14 @@ type PixPayload = {
 
 type Props = {
   open: boolean;
-  onClose: () => void;
+  onPaid: () => void;
+  onBack: () => void;
+  busy?: boolean;
 };
 
-export function QRCodeModal({ open, onClose }: Props) {
+export function QRCodeModal({ open, onPaid, onBack, busy = false }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const backBtnRef = useRef<HTMLButtonElement>(null);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<PixPayload | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function QRCodeModal({ open, onClose }: Props) {
 
     if (open) {
       if (!el.open) el.showModal();
-      queueMicrotask(() => closeBtnRef.current?.focus());
+      queueMicrotask(() => backBtnRef.current?.focus());
 
       const onKeyDown = (e: KeyboardEvent) => {
         if (e.key !== "Tab" || !dialogRef.current) return;
@@ -94,7 +96,7 @@ export function QRCodeModal({ open, onClose }: Props) {
       aria-modal="true"
       onCancel={(e) => {
         e.preventDefault();
-        onClose();
+        onBack();
       }}
     >
       <div className="mx-auto flex h-full w-full max-w-md flex-col justify-center">
@@ -117,7 +119,7 @@ export function QRCodeModal({ open, onClose }: Props) {
           <div className="p-6">
 
         {loading && (
-          <p className="text-center text-[#233d4d]" role="status">
+          <p className="text-center py-4 text-lg text-center font-black text-black" role="status">
             Carregando QR Code…
           </p>
         )}
@@ -146,7 +148,7 @@ export function QRCodeModal({ open, onClose }: Props) {
             {data.description ? (
               <p
                 id="pix-description"
-                className="mb-6 text-center text-sm text-[#233d4d]"
+                className="mb-6 text-lg text-center font-black text-black"
               >
                 {data.description}
               </p>
@@ -154,14 +156,26 @@ export function QRCodeModal({ open, onClose }: Props) {
           </>
         )}
 
-        <button
-          ref={closeBtnRef}
-          type="button"
-          onClick={onClose}
-          className="mt-auto w-full rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-        >
-          Fechar
-        </button>
+        <div className="mt-auto flex flex-col gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={onPaid}
+            disabled={busy}
+            aria-label="Confirmar pagamento PIX e concluir pedido"
+            className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? "Processando…" : "Pago"}
+          </button>
+          <button
+            ref={backBtnRef}
+            type="button"
+            onClick={onBack}
+            aria-label="Voltar ao checkout sem concluir o pedido"
+            className="flex-1 rounded-lg border-2 border-black bg-[#fff4e8] py-3 font-black text-black hover:bg-[#f8e8d8] focus:outline-none focus:ring-2 focus:ring-amber-400"
+          >
+            Voltar
+          </button>
+        </div>
           </div>
         </div>
       </div>

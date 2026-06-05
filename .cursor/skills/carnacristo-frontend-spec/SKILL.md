@@ -74,7 +74,8 @@ Usar esta estrutura base:
 - Busca configuracao ativa de `pix_settings`.
 - Exibe imagem QR e descricao configurada pelo ADM.
 - Possui estado de loading, erro e fallback.
-- Possui botao `Fechar` que conclui o fluxo visual do PIX.
+- Possui botoes `Pago` (chama `onPaid`, conclui pedido) e `Voltar` (chama `onBack`, retorna ao checkout sem POST).
+- Escape e `onCancel` do dialog devem acionar `onBack`, nao `onPaid`.
 
 ### `ProductCard` e `Cart`
 

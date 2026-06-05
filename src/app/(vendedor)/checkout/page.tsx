@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { PaymentMethodSelector } from "@/components/PaymentMethodSelector";
 import { QRCodeModal } from "@/components/QRCodeModal";
+import { SaleConfirmModal } from "@/components/SaleConfirmModal";
 import type { PaymentMethod } from "@/types";
 import { cartLinesToPayload, cartTotal, useCartStore } from "@/store/cartStore";
+import { validateOrderTitle } from "@/utils/validation";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -20,8 +22,16 @@ export default function CheckoutPage() {
     null,
   );
   const [pixOpen, setPixOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    const titleResult = validateOrderTitle(orderTitle);
+    if (!titleResult.ok) {
+      router.replace("/novo-pedido");
+    }
+  }, [orderTitle, router]);
 
   const submitOrder = useCallback(async () => {
     if (!paymentMethod) {
@@ -31,11 +41,17 @@ export default function CheckoutPage() {
     setBusy(true);
     setErr(null);
     try {
+      const titleResult = validateOrderTitle(orderTitle);
+      if (!titleResult.ok) {
+        setErr(titleResult.message);
+        return;
+      }
+
       const res = await fetch("/api/pedidos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: orderTitle,
+          title: titleResult.value,
           paymentMethod,
           items: cartLinesToPayload(lines),
         }),
@@ -63,10 +79,13 @@ export default function CheckoutPage() {
 
   function onFinalizar() {
     setErr(null);
-    if (!orderTitle.trim()) {
-      setErr("Informe o título do pedido na etapa anterior.");
+
+    const titleResult = validateOrderTitle(orderTitle);
+    if (!titleResult.ok) {
+      setErr(titleResult.message);
       return;
     }
+
     if (lines.length === 0) {
       setErr("Adicione ao menos um item.");
       return;
@@ -79,15 +98,30 @@ export default function CheckoutPage() {
       setPixOpen(true);
       return;
     }
+    setConfirmOpen(true);
+  }
+
+  function onConfirmSale() {
+    setConfirmOpen(false);
     void submitOrder();
   }
 
-  async function onPixModalClose() {
+  function onConfirmBack() {
+    setConfirmOpen(false);
+  }
+
+  function onPixPaid() {
     setPixOpen(false);
-    await submitOrder();
+    void submitOrder();
+  }
+
+  function onPixBack() {
+    setPixOpen(false);
   }
 
   const total = cartTotal(lines);
+  const titleResult = validateOrderTitle(orderTitle);
+  const displayTitle = titleResult.ok ? titleResult.value : "—";
 
   return (
     <div className="space-y-6">
@@ -99,7 +133,7 @@ export default function CheckoutPage() {
         </div>
         <div className="p-4">
         <p className="text-lg font-black text-black">
-          Título: <span className="font-black">{orderTitle || "—"}</span>
+          Título: <span className="font-black">{displayTitle}</span>
         </p>
 
         <ol className="mt-3 list-inside list-decimal space-y-1 pl-4 text-sm font-black text-black">
@@ -145,7 +179,25 @@ export default function CheckoutPage() {
         </button>
       </div>
 
-      <QRCodeModal open={pixOpen} onClose={() => void onPixModalClose()} />
+      <QRCodeModal
+        open={pixOpen}
+        onPaid={onPixPaid}
+        onBack={onPixBack}
+        busy={busy}
+      />
+
+      {paymentMethod && paymentMethod !== "pix" ? (
+        <SaleConfirmModal
+          open={confirmOpen}
+          onConfirm={onConfirmSale}
+          onBack={onConfirmBack}
+          busy={busy}
+          title={displayTitle}
+          lines={lines}
+          total={total}
+          paymentMethod={paymentMethod}
+        />
+      ) : null}
     </div>
   );
 }
