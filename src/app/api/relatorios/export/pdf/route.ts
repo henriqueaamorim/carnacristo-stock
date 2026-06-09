@@ -5,9 +5,13 @@ import {
   buildReportSnapshot,
   sellerDisplayName,
 } from "@/lib/reports/build-report-snapshot";
+import type { PaymentMethod } from "@/types";
 import {
+  formatReportPaymentLabel,
   PAYMENT_METHOD_LABELS,
-  PAYMENT_METHODS,
+  PENDING_PAYMENT_KEY,
+  PENDING_PAYMENT_LABEL,
+  REPORT_PAYMENT_KEYS,
   revenueByMethod,
 } from "@/lib/reports/payment-labels";
 
@@ -175,7 +179,7 @@ export async function GET(request: Request) {
       { label: "Pedidos", width: 80 },
     ],
     snapshot.paymentBreakdown.map((p) => [
-      p.payment_method,
+      formatReportPaymentLabel(p.payment_method),
       fmtCurrency(p.revenue),
       String(p.units),
       String(p.orders),
@@ -186,8 +190,11 @@ export async function GET(request: Request) {
   drawSectionTitle("Pagamento por vendedor");
   const paymentPivotColumns = [
     { label: "Vendedor", width: 110 },
-    ...PAYMENT_METHODS.map((method) => ({
-      label: PAYMENT_METHOD_LABELS[method],
+    ...REPORT_PAYMENT_KEYS.map((method) => ({
+      label:
+        method === PENDING_PAYMENT_KEY
+          ? PENDING_PAYMENT_LABEL
+          : PAYMENT_METHOD_LABELS[method as PaymentMethod],
       width: 68,
     })),
   ];
@@ -195,7 +202,7 @@ export async function GET(request: Request) {
     const revenues = revenueByMethod(seller);
     return [
       sellerDisplayName(seller),
-      ...PAYMENT_METHODS.map((method) => fmtCurrency(revenues[method])),
+      ...REPORT_PAYMENT_KEYS.map((method) => fmtCurrency(revenues[method])),
     ];
   });
   drawTable(paymentPivotColumns, paymentBySellerRows);

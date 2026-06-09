@@ -23,6 +23,7 @@ export default function CheckoutPage() {
   );
   const [pixOpen, setPixOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deferredOpen, setDeferredOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -33,63 +34,81 @@ export default function CheckoutPage() {
     }
   }, [orderTitle, router]);
 
-  const submitOrder = useCallback(async () => {
-    if (!paymentMethod) {
-      setErr("Selecione a forma de pagamento.");
-      return;
-    }
-    setBusy(true);
-    setErr(null);
-    try {
-      const titleResult = validateOrderTitle(orderTitle);
-      if (!titleResult.ok) {
-        setErr(titleResult.message);
+  const submitOrder = useCallback(
+    async (opts: { deferred?: boolean } = {}) => {
+      const deferred = opts.deferred === true;
+      if (!deferred && !paymentMethod) {
+        setErr("Selecione a forma de pagamento.");
         return;
       }
+      setBusy(true);
+      setErr(null);
+      try {
+        const titleResult = validateOrderTitle(orderTitle);
+        if (!titleResult.ok) {
+          setErr(titleResult.message);
+          return;
+        }
 
-      const res = await fetch("/api/pedidos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: titleResult.value,
-          paymentMethod,
-          items: cartLinesToPayload(lines),
-        }),
-      });
-      const body = (await res.json().catch(() => ({}))) as {
-        error?: string;
-        order_id_display?: string;
-        total_amount?: number | string;
-      };
-      if (!res.ok) {
-        setErr(body.error || "Não foi possível finalizar o pedido.");
-        return;
+        const res = await fetch("/api/pedidos", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: titleResult.value,
+            ...(deferred
+              ? { deferredPayment: true }
+              : { paymentMethod }),
+            items: cartLinesToPayload(lines),
+          }),
+        });
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          order_id_display?: string;
+          total_amount?: number | string;
+        };
+        if (!res.ok) {
+          setErr(body.error || "Não foi possível finalizar o pedido.");
+          return;
+        }
+        await queryClient.invalidateQueries({ queryKey: ["products"] });
+        const display = String(body.order_id_display ?? "");
+        const total = Number(body.total_amount ?? 0);
+        clear();
+        if (deferred) {
+          router.push(
+            `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&pending=1`,
+          );
+        } else {
+          router.push(
+            `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&method=${encodeURIComponent(paymentMethod!)}`,
+          );
+        }
+      } finally {
+        setBusy(false);
       }
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      const display = String(body.order_id_display ?? "");
-      const total = Number(body.total_amount ?? 0);
-      clear();
-      router.push(
-        `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&method=${encodeURIComponent(paymentMethod)}`,
-      );
-    } finally {
-      setBusy(false);
-    }
-  }, [paymentMethod, orderTitle, lines, clear, router, queryClient]);
+    },
+    [paymentMethod, orderTitle, lines, clear, router, queryClient],
+  );
 
-  function onFinalizar() {
+  function validateCheckout(): boolean {
     setErr(null);
 
     const titleResult = validateOrderTitle(orderTitle);
     if (!titleResult.ok) {
       setErr(titleResult.message);
-      return;
+      return false;
     }
 
     if (lines.length === 0) {
       setErr("Adicione ao menos um item.");
-      return;
+      return false;
     }
+
+    return true;
+  }
+
+  function onFinalizar() {
+    if (!validateCheckout()) return;
     if (!paymentMethod) {
       setErr("Selecione a forma de pagamento.");
       return;
@@ -101,6 +120,11 @@ export default function CheckoutPage() {
     setConfirmOpen(true);
   }
 
+  function onSalvarPendente() {
+    if (!validateCheckout()) return;
+    setDeferredOpen(true);
+  }
+
   function onConfirmSale() {
     setConfirmOpen(false);
     void submitOrder();
@@ -108,6 +132,15 @@ export default function CheckoutPage() {
 
   function onConfirmBack() {
     setConfirmOpen(false);
+  }
+
+  function onConfirmDeferred() {
+    setDeferredOpen(false);
+    void submitOrder({ deferred: true });
+  }
+
+  function onDeferredBack() {
+    setDeferredOpen(false);
   }
 
   function onPixPaid() {
@@ -162,21 +195,34 @@ export default function CheckoutPage() {
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Link
-          href="/novo-pedido"
-          className="rounded-lg border-2 border-black bg-[#fff4e8] px-4 py-3 text-center font-black text-black"
-        >
-          Voltar
-        </Link>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/novo-pedido"
+            className="rounded-lg border-2 border-black bg-[#fff4e8] px-4 py-3 text-center font-black text-black"
+          >
+            Voltar
+          </Link>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onFinalizar}
+            className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
+          >
+            {busy ? "Processando…" : "Finalizar pedido"}
+          </button>
+        </div>
         <button
           type="button"
           disabled={busy}
-          onClick={onFinalizar}
-          className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
+          onClick={onSalvarPendente}
+          className="rounded-lg border-2 border-black bg-[#fff4e8] py-3 font-black text-black hover:bg-[#f8e8d8] disabled:opacity-50"
         >
-          {busy ? "Processando…" : "Finalizar pedido"}
+          Salvar pendente de pagamento
         </button>
+        <p className="text-center text-xs font-semibold text-[#233d4d]">
+          O pagamento será registrado depois pelo administrador.
+        </p>
       </div>
 
       <QRCodeModal
@@ -198,6 +244,17 @@ export default function CheckoutPage() {
           paymentMethod={paymentMethod}
         />
       ) : null}
+
+      <SaleConfirmModal
+        open={deferredOpen}
+        onConfirm={onConfirmDeferred}
+        onBack={onDeferredBack}
+        busy={busy}
+        title={displayTitle}
+        lines={lines}
+        total={total}
+        showPayment={false}
+      />
     </div>
   );
 }

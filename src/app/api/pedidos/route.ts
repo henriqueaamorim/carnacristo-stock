@@ -77,6 +77,11 @@ export async function POST(request: Request) {
     typeof body === "object" && body !== null && "title" in body
       ? String((body as { title: unknown }).title)
       : "";
+  const deferredPayment =
+    typeof body === "object" &&
+    body !== null &&
+    "deferredPayment" in body &&
+    (body as { deferredPayment: unknown }).deferredPayment === true;
   const paymentMethod =
     typeof body === "object" && body !== null && "paymentMethod" in body
       ? (body as { paymentMethod: unknown }).paymentMethod
@@ -86,7 +91,14 @@ export async function POST(request: Request) {
       ? (body as { items: unknown }).items
       : null;
 
-  if (!isPaymentMethod(paymentMethod)) {
+  if (deferredPayment && paymentMethod != null) {
+    return NextResponse.json(
+      { error: "Não envie forma de pagamento em pedido pendente." },
+      { status: 400 },
+    );
+  }
+
+  if (!deferredPayment && !isPaymentMethod(paymentMethod)) {
     return NextResponse.json(
       { error: "Forma de pagamento inválida" },
       { status: 400 },
@@ -103,7 +115,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await supabase.rpc("create_order_with_inventory", {
     p_title: titleResult.value,
-    p_payment_method: paymentMethod,
+    p_payment_method: deferredPayment ? null : paymentMethod,
     p_items: parsed.items,
   });
 

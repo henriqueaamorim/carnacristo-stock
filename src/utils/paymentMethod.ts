@@ -17,3 +17,13 @@ export const PAYMENT_METHOD_ORDER: PaymentMethod[] = [
   "doacao",
   "parceria",
 ];
+
+export function formatPaymentMethod(
+  method: PaymentMethod | string | null | undefined,
+): string {
+  if (method == null || method === "") return "A definir";
+  if (method in PAYMENT_METHOD_LABELS) {
+    return PAYMENT_METHOD_LABELS[method as PaymentMethod];
+  }
+  return method;
+}

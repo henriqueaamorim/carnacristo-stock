@@ -16,6 +16,7 @@ export default function SucessoInner() {
   const display = params.get("display") ?? "—";
   const total = params.get("total");
   const method = params.get("method") ?? "—";
+  const isPending = params.get("pending") === "1";
 
   const totalFmt =
     total != null && !Number.isNaN(Number(total))
@@ -30,7 +31,9 @@ export default function SucessoInner() {
       <div className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
         <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
           <p className="text-sm font-black uppercase tracking-wide text-black">
-            Pedido finalizado com sucesso
+            {isPending
+              ? "Pedido registrado — pagamento pendente"
+              : "Pedido finalizado com sucesso"}
           </p>
         </div>
         <div className="p-8">
@@ -38,9 +41,15 @@ export default function SucessoInner() {
         <p className="mt-4 text-[#233d4d]">
           Total: <span className="font-black">{totalFmt}</span>
         </p>
-        <p className="mt-1 text-[#233d4d]">
-          Método: <span className="font-black">{method}</span>
-        </p>
+        {!isPending ? (
+          <p className="mt-1 text-[#233d4d]">
+            Método: <span className="font-black">{method}</span>
+          </p>
+        ) : (
+          <p className="mt-1 text-sm font-semibold text-[#233d4d]">
+            O administrador registrará a forma de pagamento posteriormente.
+          </p>
+        )}
         </div>
       </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">

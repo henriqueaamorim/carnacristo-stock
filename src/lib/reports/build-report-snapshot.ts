@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { PAYMENT_METHODS } from "@/lib/reports/payment-labels";
+import {
+  normalizeReportPaymentMethod,
+  PAYMENT_METHODS,
+  REPORT_PAYMENT_KEYS,
+} from "@/lib/reports/payment-labels";
 import type { PaymentMethod } from "@/types";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
@@ -50,7 +54,7 @@ export type ReportPaymentBySeller = {
   email: string | null;
   full_name: string | null;
   methods: {
-    payment_method: PaymentMethod;
+    payment_method: string;
     revenue: number;
     units: number;
     orders: number;
@@ -113,7 +117,7 @@ export async function buildReportSnapshot(
     .select(
       "id, order_id_display, title, seller_id, payment_method, total_amount, created_at",
     )
-    .eq("status", "completed")
+    .in("status", ["completed", "pending"])
     .gte("created_at", from)
     .lte("created_at", to)
     .order("created_at", { ascending: true });
@@ -128,7 +132,7 @@ export async function buildReportSnapshot(
     order_id_display: o.order_id_display,
     title: o.title,
     seller_id: o.seller_id,
-    payment_method: String(o.payment_method),
+    payment_method: normalizeReportPaymentMethod(o.payment_method),
     total_amount: Number(o.total_amount),
     created_at: o.created_at,
   }));
@@ -274,7 +278,7 @@ export async function buildReportSnapshot(
       seller_id: id,
       email: sellerMetaById[id]?.email ?? null,
       full_name: sellerMetaById[id]?.full_name ?? null,
-      methods: PAYMENT_METHODS.map((payment_method) => {
+      methods: REPORT_PAYMENT_KEYS.map((payment_method) => {
         const m = sellerPayments?.get(payment_method);
         return {
           payment_method,
@@ -292,11 +296,13 @@ export async function buildReportSnapshot(
       seller_id: id,
       email: sellerMetaById[id]?.email ?? null,
       full_name: sellerMetaById[id]?.full_name ?? null,
-      products: productsCatalog.map((product) => ({
-        product_id: product.product_id,
-        product_name: product.product_name,
-        quantity: sellerProducts?.get(product.product_id) ?? 0,
-      })),
+      products: productsCatalog
+        .map((product) => ({
+          product_id: product.product_id,
+          product_name: product.product_name,
+          quantity: sellerProducts?.get(product.product_id) ?? 0,
+        }))
+        .filter((p) => p.quantity > 0),
     };
   });
 

@@ -4,7 +4,11 @@ import {
   buildReportSnapshot,
   sellerDisplayName,
 } from "@/lib/reports/build-report-snapshot";
-import { PAYMENT_METHODS, revenueByMethod } from "@/lib/reports/payment-labels";
+import {
+  formatReportPaymentLabel,
+  REPORT_PAYMENT_KEYS,
+  revenueByMethod,
+} from "@/lib/reports/payment-labels";
 
 function escCell(v: string | number | null | undefined) {
   const s = v == null ? "" : String(v);
@@ -69,7 +73,7 @@ export async function GET(request: Request) {
         o.title,
         o.seller_id,
         snapshot.sellerMetaById[o.seller_id]?.email ?? "",
-        o.payment_method,
+        formatReportPaymentLabel(o.payment_method),
         o.total_amount,
         o.created_at,
         it.product_id,
@@ -86,13 +90,17 @@ export async function GET(request: Request) {
   lines.push("");
   lines.push("# pagamento_por_vendedor");
   lines.push(
-    ["seller_id", "seller_name", ...PAYMENT_METHODS].map(escCell).join(","),
+    ["seller_id", "seller_name", ...REPORT_PAYMENT_KEYS].map(escCell).join(","),
   );
   for (const seller of snapshot.paymentBySeller) {
     const name = sellerDisplayName(seller);
     const revenues = revenueByMethod(seller);
     lines.push(
-      [seller.seller_id, name, ...PAYMENT_METHODS.map((m) => revenues[m])]
+      [
+        seller.seller_id,
+        name,
+        ...REPORT_PAYMENT_KEYS.map((m) => revenues[m]),
+      ]
         .map(escCell)
         .join(","),
     );

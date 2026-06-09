@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { PaymentMethodSelector } from "@/components/PaymentMethodSelector";
 import type { PaymentMethod } from "@/types";
 import { formatOrderStatus } from "@/utils/orderStatus";
+import { formatPaymentMethod } from "@/utils/paymentMethod";
 
 const PAYMENTS: PaymentMethod[] = [
   "pix",
@@ -36,7 +38,7 @@ export default function AdminPedidoDetalhePage() {
     id: string;
     order_id_display: string;
     title: string;
-    payment_method: PaymentMethod;
+    payment_method: PaymentMethod | null;
     total_amount: number;
     status: string;
     created_at: string;
@@ -48,6 +50,7 @@ export default function AdminPedidoDetalhePage() {
 
   const [editTitle, setEditTitle] = useState("");
   const [editPay, setEditPay] = useState<PaymentMethod>("pix");
+  const [confirmPay, setConfirmPay] = useState<PaymentMethod | null>("pix");
   const [editLines, setEditLines] = useState<{ productId: string; quantity: number }[]>(
     [],
   );
@@ -74,7 +77,8 @@ export default function AdminPedidoDetalhePage() {
       setItems(body.items ?? []);
       if (body.order) {
         setEditTitle(body.order.title);
-        setEditPay(body.order.payment_method);
+        setEditPay(body.order.payment_method ?? "pix");
+        setConfirmPay(body.order.payment_method ?? "pix");
         setEditLines(
           (body.items ?? []).map((i) => ({
             productId: i.product_id,
@@ -104,6 +108,29 @@ export default function AdminPedidoDetalhePage() {
     else {
       setMsg("Pedido cancelado.");
       await load();
+    }
+    setBusy(false);
+  }
+
+  async function confirmarPagamento() {
+    if (!id || !confirmPay) {
+      setErr("Selecione a forma de pagamento.");
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    setMsg(null);
+    const res = await fetch(`/api/pedidos/${id}/confirmar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentMethod: confirmPay }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) setErr(body.error || "Erro ao confirmar pagamento");
+    else {
+      setMsg("Pagamento confirmado. Pedido finalizado.");
+      await load();
+      router.refresh();
     }
     setBusy(false);
   }
@@ -167,7 +194,7 @@ export default function AdminPedidoDetalhePage() {
             Vendedor: {seller?.email ?? order.seller_id} · {formatOrderStatus(order.status)}
           </p>
         </div>
-        {order.status === "completed" ? (
+        {order.status === "completed" || order.status === "pending" ? (
           <button
             type="button"
             disabled={busy}
@@ -209,6 +236,12 @@ export default function AdminPedidoDetalhePage() {
             </li>
           ))}
         </ul>
+        <p className="mt-2 text-sm text-[#233d4d]">
+          Pagamento:{" "}
+          <span className="font-black text-black">
+            {formatPaymentMethod(order.payment_method)}
+          </span>
+        </p>
         <p className="mt-3 text-lg font-black text-black">
           Total:{" "}
           {Number(order.total_amount).toLocaleString("pt-BR", {
@@ -217,6 +250,33 @@ export default function AdminPedidoDetalhePage() {
           })}
         </p>
       </section>
+
+      {order.status === "pending" ? (
+        <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+          <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
+            <h2 className="font-black uppercase tracking-wide text-black">
+              Confirmar pagamento
+            </h2>
+          </div>
+          <div className="space-y-4 p-6">
+            <p className="text-sm font-semibold text-[#233d4d]">
+              Selecione a forma de pagamento recebida e confirme o pedido.
+            </p>
+            <PaymentMethodSelector
+              value={confirmPay}
+              onChange={(v) => setConfirmPay(v)}
+            />
+            <button
+              type="button"
+              disabled={busy || !confirmPay}
+              onClick={() => void confirmarPagamento()}
+              className="rounded-lg border-2 border-black bg-[#abcf85] px-4 py-2 font-black text-black disabled:opacity-50"
+            >
+              Confirmar pagamento
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       {order.status === "completed" ? (
         <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">

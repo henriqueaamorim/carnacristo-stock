@@ -13,7 +13,9 @@ type Props = {
   title: string;
   lines: CartLine[];
   total: number;
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod;
+  /** Quando false, confirma pedido pendente de pagamento (sem método). */
+  showPayment?: boolean;
 };
 
 export function SaleConfirmModal({
@@ -25,6 +27,7 @@ export function SaleConfirmModal({
   lines,
   total,
   paymentMethod,
+  showPayment = true,
 }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const backBtnRef = useRef<HTMLButtonElement>(null);
@@ -68,7 +71,15 @@ export function SaleConfirmModal({
     style: "currency",
     currency: "BRL",
   });
-  const paymentLabel = PAYMENT_METHOD_LABELS[paymentMethod];
+  const paymentLabel =
+    paymentMethod != null ? PAYMENT_METHOD_LABELS[paymentMethod] : null;
+  const dialogTitle = showPayment ? "Confirmar venda" : "Pendente de pagamento";
+  const confirmQuestion = showPayment
+    ? "Confirmar venda deste pedido?"
+    : "Salvar pedido sem pagamento agora?";
+  const confirmHint = showPayment
+    ? null
+    : "O pagamento será registrado depois pelo administrador.";
 
   return (
     <dialog
@@ -89,7 +100,7 @@ export function SaleConfirmModal({
               id="sale-confirm-dialog-title"
               className="text-sm font-black uppercase tracking-wide text-black"
             >
-              Confirmar venda
+              {dialogTitle}
             </h2>
             <div className="flex items-center gap-2">
               <span
@@ -107,8 +118,13 @@ export function SaleConfirmModal({
               id="sale-confirm-description"
               className="mb-4 text-center text-sm font-black text-black"
             >
-              Confirmar venda deste pedido?
+              {confirmQuestion}
             </p>
+            {confirmHint ? (
+              <p className="mb-4 text-center text-xs font-semibold text-[#233d4d]">
+                {confirmHint}
+              </p>
+            ) : null}
 
             <p className="text-lg font-black text-black">
               Título: <span className="font-black">{title}</span>
@@ -125,20 +141,26 @@ export function SaleConfirmModal({
             <p className="mt-2 text-lg font-black text-black">
               Total: <span className="font-black">{totalFmt}</span>
             </p>
-            <p className="mt-2 text-sm font-black text-[#233d4d]">
-              Pagamento:{" "}
-              <span className="text-black">{paymentLabel}</span>
-            </p>
+            {showPayment && paymentLabel ? (
+              <p className="mt-2 text-sm font-black text-[#233d4d]">
+                Pagamento:{" "}
+                <span className="text-black">{paymentLabel}</span>
+              </p>
+            ) : null}
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={onConfirm}
                 disabled={busy}
-                aria-label="Confirmar venda e concluir pedido"
+                aria-label={
+                  showPayment
+                    ? "Confirmar venda e concluir pedido"
+                    : "Salvar pedido pendente de pagamento"
+                }
                 className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busy ? "Processando…" : "Confirmar"}
+                {busy ? "Processando…" : showPayment ? "Confirmar" : "Salvar pendente"}
               </button>
               <button
                 ref={backBtnRef}

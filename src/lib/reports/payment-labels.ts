@@ -1,5 +1,11 @@
 import type { PaymentMethod } from "@/types";
 
+export const PENDING_PAYMENT_KEY = "pendente_pagamento";
+
+export const PENDING_PAYMENT_LABEL = "Pendente de pagamento";
+
+export type ReportPaymentKey = PaymentMethod | typeof PENDING_PAYMENT_KEY;
+
 export const PAYMENT_METHODS: PaymentMethod[] = [
   "pix",
   "dinheiro",
@@ -7,6 +13,11 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
   "debito",
   "doacao",
   "parceria",
+];
+
+export const REPORT_PAYMENT_KEYS: ReportPaymentKey[] = [
+  ...PAYMENT_METHODS,
+  PENDING_PAYMENT_KEY,
 ];
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
@@ -22,12 +33,34 @@ export type SellerPaymentMethods = {
   methods: { payment_method: string; revenue: number }[];
 };
 
-export function revenueByMethod(seller: SellerPaymentMethods): Record<PaymentMethod, number> {
-  const map = {} as Record<PaymentMethod, number>;
+export function normalizeReportPaymentMethod(
+  method: string | null | undefined,
+): string {
+  if (method == null || method === "") return PENDING_PAYMENT_KEY;
+  return method;
+}
+
+export function formatReportPaymentLabel(method: string): string {
+  if (method === PENDING_PAYMENT_KEY) return PENDING_PAYMENT_LABEL;
+  if (PAYMENT_METHODS.includes(method as PaymentMethod)) {
+    return PAYMENT_METHOD_LABELS[method as PaymentMethod];
+  }
+  return method;
+}
+
+export function revenueByMethod(
+  seller: SellerPaymentMethods,
+): Record<ReportPaymentKey, number> {
+  const map = {} as Record<ReportPaymentKey, number>;
   for (const method of PAYMENT_METHODS) map[method] = 0;
+  map[PENDING_PAYMENT_KEY] = 0;
   for (const m of seller.methods) {
-    if (PAYMENT_METHODS.includes(m.payment_method as PaymentMethod)) {
-      map[m.payment_method as PaymentMethod] = m.revenue;
+    const key = normalizeReportPaymentMethod(m.payment_method);
+    if (
+      PAYMENT_METHODS.includes(key as PaymentMethod) ||
+      key === PENDING_PAYMENT_KEY
+    ) {
+      map[key as ReportPaymentKey] = m.revenue;
     }
   }
   return map;

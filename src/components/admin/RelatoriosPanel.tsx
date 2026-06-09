@@ -1,10 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { PaymentMethod } from "@/types";
 import {
   fmtRevenueBrl,
+  formatReportPaymentLabel,
   PAYMENT_METHOD_LABELS,
-  PAYMENT_METHODS,
+  PENDING_PAYMENT_KEY,
+  PENDING_PAYMENT_LABEL,
+  REPORT_PAYMENT_KEYS,
   revenueByMethod,
 } from "@/lib/reports/payment-labels";
 import type { UserRole } from "@/types";
@@ -283,7 +287,9 @@ export function RelatoriosPanel() {
                 <tbody>
                   {data.paymentBreakdown.map((p) => (
                     <tr key={p.payment_method} className="border-b border-black/20">
-                      <td className="p-3 font-bold text-black">{p.payment_method}</td>
+                      <td className="p-3 font-bold text-black">
+                        {formatReportPaymentLabel(p.payment_method)}
+                      </td>
                       <td className="p-3 font-bold text-black">
                         {p.revenue.toLocaleString("pt-BR", {
                           style: "currency",
@@ -306,9 +312,11 @@ export function RelatoriosPanel() {
                 <thead className="border-b-2 border-black bg-[#ea5342] text-black">
                   <tr>
                     <th className="p-3 font-black">Vendedor</th>
-                    {PAYMENT_METHODS.map((method) => (
+                    {REPORT_PAYMENT_KEYS.map((method) => (
                       <th key={method} className="p-3 font-black whitespace-nowrap">
-                        {PAYMENT_METHOD_LABELS[method]}
+                        {method === PENDING_PAYMENT_KEY
+                          ? PENDING_PAYMENT_LABEL
+                          : PAYMENT_METHOD_LABELS[method as PaymentMethod]}
                       </th>
                     ))}
                   </tr>
@@ -316,7 +324,10 @@ export function RelatoriosPanel() {
                 <tbody>
                   {data.paymentBySeller.length === 0 ? (
                     <tr>
-                      <td colSpan={1 + PAYMENT_METHODS.length} className="p-3 text-black">
+                      <td
+                        colSpan={1 + REPORT_PAYMENT_KEYS.length}
+                        className="p-3 text-black"
+                      >
                         Sem vendedores no período.
                       </td>
                     </tr>
@@ -328,7 +339,7 @@ export function RelatoriosPanel() {
                           <td className="p-3 font-bold text-black whitespace-nowrap">
                             {sellerName(seller)}
                           </td>
-                          {PAYMENT_METHODS.map((method) => (
+                          {REPORT_PAYMENT_KEYS.map((method) => (
                             <td key={method} className="p-3 font-bold text-black whitespace-nowrap">
                               {fmtRevenueBrl(revenues[method])}
                             </td>
@@ -353,27 +364,33 @@ export function RelatoriosPanel() {
                 {data.productUnitsBySeller.map((seller) => (
                   <div key={seller.seller_id}>
                     <h3 className="mb-2 text-sm font-black text-black">{sellerName(seller)}</h3>
-                    <div className="overflow-x-auto rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
-                      <table className="min-w-full text-left text-sm text-[#233d4d]">
-                        <thead className="border-b-2 border-black bg-[#ea5342] text-black">
-                          <tr>
-                            <th className="p-3 font-black">Produto</th>
-                            <th className="p-3 font-black">Quantidade</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {seller.products.map((product) => (
-                            <tr
-                              key={product.product_id}
-                              className="border-b border-black/20"
-                            >
-                              <td className="p-3 font-bold text-black">{product.product_name}</td>
-                              <td className="p-3 font-mono">{product.quantity}</td>
+                    {seller.products.length === 0 ? (
+                      <p className="rounded-lg border-2 border-black bg-[#fff4e8] p-3 text-sm text-[#233d4d]">
+                        Nenhum produto vendido neste período.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+                        <table className="min-w-full text-left text-sm text-[#233d4d]">
+                          <thead className="border-b-2 border-black bg-[#ea5342] text-black">
+                            <tr>
+                              <th className="p-3 font-black">Produto</th>
+                              <th className="p-3 font-black">Quantidade</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {seller.products.map((product) => (
+                              <tr
+                                key={product.product_id}
+                                className="border-b border-black/20"
+                              >
+                                <td className="p-3 font-bold text-black">{product.product_name}</td>
+                                <td className="p-3 font-mono">{product.quantity}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

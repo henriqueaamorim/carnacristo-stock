@@ -31,4 +31,5 @@ export type CreateOrderResponse = {
   order_id: string;
   order_id_display: string;
   total_amount: number;
+  status?: "pending" | "completed";
 };

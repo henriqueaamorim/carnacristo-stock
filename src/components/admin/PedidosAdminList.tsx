@@ -7,13 +7,14 @@ import {
   ORDER_STATUS_LABEL,
   type OrderStatus,
 } from "@/utils/orderStatus";
+import { formatPaymentMethod } from "@/utils/paymentMethod";
 
 type OrderRow = {
   id: string;
   order_id_display: string;
   title: string;
   seller_id: string;
-  payment_method: string;
+  payment_method: string | null;
   total_amount: number;
   status: string;
   created_at: string;
@@ -143,14 +144,24 @@ export function PedidosAdminList() {
                   <td className="p-4 font-bold text-black">
                     {o.seller?.full_name?.trim() || o.seller?.email || "—"}
                   </td>
-                  <td className="p-4 font-bold text-black">{o.payment_method}</td>
+                  <td className="p-4 font-bold text-black">
+                    {formatPaymentMethod(o.payment_method)}
+                  </td>
                   <td className="p-4 font-bold text-black">
                     {Number(o.total_amount).toLocaleString("pt-BR", {
                       style: "currency",
                       currency: "BRL",
                     })}
                   </td>
-                  <td className="p-4 font-bold text-black">{formatOrderStatus(o.status)}</td>
+                  <td className="p-4 font-bold text-black">
+                    {o.status === "pending" ? (
+                      <span className="rounded border-2 border-amber-700 bg-amber-100 px-2 py-0.5 text-xs font-black text-amber-950">
+                        {formatOrderStatus(o.status)}
+                      </span>
+                    ) : (
+                      formatOrderStatus(o.status)
+                    )}
+                  </td>
                   <td className="p-4 font-bold text-black">
                     {new Date(o.created_at).toLocaleString("pt-BR")}
                   </td>
