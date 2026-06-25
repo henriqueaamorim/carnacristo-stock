@@ -2,6 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { isPaymentMethod, parseOrderItems } from "@/lib/order-items";
 import { requireAdmin } from "@/lib/require-admin";
+import {
+  buildOrderTitleIlikePattern,
+  isOrderTitleSearchActive,
+} from "@/utils/orderTitleSearch";
 import { validateOrderTitle } from "@/utils/validation";
 
 export async function GET(request: Request) {
@@ -13,6 +17,7 @@ export async function GET(request: Request) {
   const to = u.searchParams.get("to");
   const sellerId = u.searchParams.get("sellerId");
   const status = u.searchParams.get("status");
+  const titleRaw = u.searchParams.get("title") ?? "";
 
   let q = g.supabase
     .from("orders")
@@ -25,6 +30,9 @@ export async function GET(request: Request) {
   if (to) q = q.lte("created_at", to);
   if (sellerId) q = q.eq("seller_id", sellerId);
   if (status && status !== "all") q = q.eq("status", status);
+  if (isOrderTitleSearchActive(titleRaw)) {
+    q = q.ilike("title", buildOrderTitleIlikePattern(titleRaw));
+  }
 
   const { data: orders, error } = await q;
 

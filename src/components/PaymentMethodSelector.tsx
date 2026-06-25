@@ -8,10 +8,16 @@ import {
 
 type Props = {
   value: PaymentMethod | null;
-  onChange: (v: PaymentMethod) => void;
+  onChange: (v: PaymentMethod | null) => void;
+  /** Exibe opção "Pendente de pagamento" (value null). Uso admin em pedidos pending. */
+  allowPending?: boolean;
 };
 
-export function PaymentMethodSelector({ value, onChange }: Props) {
+export function PaymentMethodSelector({
+  value,
+  onChange,
+  allowPending = false,
+}: Props) {
   return (
     <fieldset className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
       <legend className="sr-only">Forma de pagamento</legend>
@@ -21,6 +27,21 @@ export function PaymentMethodSelector({ value, onChange }: Props) {
         </p>
       </div>
       <div className="grid gap-2 p-4 sm:grid-cols-2">
+        {allowPending ? (
+          <label
+            className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d] has-[:checked]:bg-[#abcf85] sm:col-span-2"
+          >
+            <input
+              type="radio"
+              name="payment"
+              value=""
+              checked={value === null}
+              onChange={() => onChange(null)}
+              className="h-4 w-4 accent-emerald-600"
+            />
+            <span className="font-black text-black">Pendente de pagamento</span>
+          </label>
+        ) : null}
         {PAYMENT_METHOD_ORDER.map((m) => (
           <label
             key={m}

@@ -8,15 +8,6 @@ import type { PaymentMethod } from "@/types";
 import { formatOrderStatus } from "@/utils/orderStatus";
 import { formatPaymentMethod } from "@/utils/paymentMethod";
 
-const PAYMENTS: PaymentMethod[] = [
-  "pix",
-  "dinheiro",
-  "credito",
-  "debito",
-  "doacao",
-  "parceria",
-];
-
 type Item = {
   id: string;
   product_id: string;
@@ -49,8 +40,7 @@ export default function AdminPedidoDetalhePage() {
   const [products, setProducts] = useState<ProductOpt[]>([]);
 
   const [editTitle, setEditTitle] = useState("");
-  const [editPay, setEditPay] = useState<PaymentMethod>("pix");
-  const [confirmPay, setConfirmPay] = useState<PaymentMethod | null>("pix");
+  const [editPay, setEditPay] = useState<PaymentMethod | null>(null);
   const [editLines, setEditLines] = useState<{ productId: string; quantity: number }[]>(
     [],
   );
@@ -77,8 +67,11 @@ export default function AdminPedidoDetalhePage() {
       setItems(body.items ?? []);
       if (body.order) {
         setEditTitle(body.order.title);
-        setEditPay(body.order.payment_method ?? "pix");
-        setConfirmPay(body.order.payment_method ?? "pix");
+        setEditPay(
+          body.order.status === "pending"
+            ? body.order.payment_method
+            : body.order.payment_method ?? "pix",
+        );
         setEditLines(
           (body.items ?? []).map((i) => ({
             productId: i.product_id,
@@ -112,48 +105,65 @@ export default function AdminPedidoDetalhePage() {
     setBusy(false);
   }
 
-  async function confirmarPagamento() {
-    if (!id || !confirmPay) {
+  async function salvarPagamento(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id || !editPay) {
       setErr("Selecione a forma de pagamento.");
       return;
     }
     setBusy(true);
     setErr(null);
     setMsg(null);
-    const res = await fetch(`/api/pedidos/${id}/confirmar`, {
-      method: "POST",
+    const res = await fetch(`/api/pedidos/${id}/pagamento`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentMethod: confirmPay }),
+      body: JSON.stringify({ paymentMethod: editPay }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) setErr(body.error || "Erro ao confirmar pagamento");
+    if (!res.ok) setErr(body.error || "Erro ao alterar forma de pagamento");
     else {
-      setMsg("Pagamento confirmado. Pedido finalizado.");
+      setMsg("Forma de pagamento atualizada.");
       await load();
       router.refresh();
     }
     setBusy(false);
   }
 
-  async function salvarEdicao(e: React.FormEvent) {
+  async function salvarPedidoPendente(e: React.FormEvent) {
     e.preventDefault();
     if (!id) return;
     setBusy(true);
     setErr(null);
     setMsg(null);
+
+    const payload: {
+      title: string;
+      items: { productId: string; quantity: number }[];
+      paymentMethod?: PaymentMethod;
+    } = {
+      title: editTitle,
+      items: editLines.filter((l) => l.productId && l.quantity > 0),
+    };
+    if (editPay != null) {
+      payload.paymentMethod = editPay;
+    }
+
     const res = await fetch(`/api/pedidos/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: editTitle,
-        paymentMethod: editPay,
-        items: editLines.filter((l) => l.productId && l.quantity > 0),
-      }),
+      body: JSON.stringify(payload),
     });
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    if (!res.ok) setErr(body.error || "Erro ao salvar edição");
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      status?: string;
+    };
+    if (!res.ok) setErr(body.error || "Erro ao salvar pedido");
     else {
-      setMsg("Pedido atualizado.");
+      setMsg(
+        editPay != null
+          ? "Pedido finalizado com pagamento registrado."
+          : "Pedido atualizado. Pagamento continua pendente.",
+      );
       await load();
       router.refresh();
     }
@@ -255,37 +265,10 @@ export default function AdminPedidoDetalhePage() {
         <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
           <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
             <h2 className="font-black uppercase tracking-wide text-black">
-              Confirmar pagamento
-            </h2>
-          </div>
-          <div className="space-y-4 p-6">
-            <p className="text-sm font-semibold text-[#233d4d]">
-              Selecione a forma de pagamento recebida e confirme o pedido.
-            </p>
-            <PaymentMethodSelector
-              value={confirmPay}
-              onChange={(v) => setConfirmPay(v)}
-            />
-            <button
-              type="button"
-              disabled={busy || !confirmPay}
-              onClick={() => void confirmarPagamento()}
-              className="rounded-lg border-2 border-black bg-[#abcf85] px-4 py-2 font-black text-black disabled:opacity-50"
-            >
-              Confirmar pagamento
-            </button>
-          </div>
-        </section>
-      ) : null}
-
-      {order.status === "completed" ? (
-        <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
-          <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
-            <h2 className="font-black uppercase tracking-wide text-black">
               Editar pedido (estoque recalculado)
             </h2>
           </div>
-          <form onSubmit={salvarEdicao} className="space-y-4 p-6">
+          <form onSubmit={salvarPedidoPendente} className="space-y-4 p-6">
             <label className="block text-sm font-black text-black">
               Título
               <input
@@ -294,20 +277,11 @@ export default function AdminPedidoDetalhePage() {
                 className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
               />
             </label>
-            <label className="block text-sm font-black text-black">
-              Pagamento
-              <select
-                value={editPay}
-                onChange={(e) => setEditPay(e.target.value as PaymentMethod)}
-                className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
-              >
-                {PAYMENTS.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <PaymentMethodSelector
+              value={editPay}
+              onChange={setEditPay}
+              allowPending
+            />
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-black text-black">Itens</span>
@@ -369,7 +343,35 @@ export default function AdminPedidoDetalhePage() {
               disabled={busy || editLines.length === 0}
               className="rounded-lg border-2 border-black bg-[#abcf85] px-4 py-2 font-black text-black disabled:opacity-50"
             >
-              Salvar edição
+              Salvar pedido
+            </button>
+          </form>
+        </section>
+      ) : null}
+
+      {order.status === "completed" ? (
+        <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+          <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
+            <h2 className="font-black uppercase tracking-wide text-black">
+              Alterar forma de pagamento
+            </h2>
+          </div>
+          <form onSubmit={salvarPagamento} className="space-y-4 p-6">
+            <p className="text-sm font-semibold text-[#233d4d]">
+              Itens e estoque não serão alterados.
+            </p>
+            <PaymentMethodSelector
+              value={editPay}
+              onChange={(v) => {
+                if (v != null) setEditPay(v);
+              }}
+            />
+            <button
+              type="submit"
+              disabled={busy || !editPay}
+              className="rounded-lg border-2 border-black bg-[#abcf85] px-4 py-2 font-black text-black disabled:opacity-50"
+            >
+              Salvar forma de pagamento
             </button>
           </form>
         </section>

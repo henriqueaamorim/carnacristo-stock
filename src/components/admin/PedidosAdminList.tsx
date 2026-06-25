@@ -8,6 +8,11 @@ import {
   type OrderStatus,
 } from "@/utils/orderStatus";
 import { formatPaymentMethod } from "@/utils/paymentMethod";
+import {
+  isOrderTitleSearchActive,
+  normalizeOrderTitleSearch,
+  ORDER_TITLE_SEARCH_MIN_LENGTH,
+} from "@/utils/orderTitleSearch";
 
 type OrderRow = {
   id: string;
@@ -35,17 +40,33 @@ export function PedidosAdminList() {
   const [from, setFrom] = useState(() => defaultRange().from.slice(0, 16));
   const [to, setTo] = useState(() => defaultRange().to.slice(0, 16));
   const [status, setStatus] = useState("all");
+  const [titleInput, setTitleInput] = useState("");
+  const [titleQuery, setTitleQuery] = useState("");
   const [rows, setRows] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setTitleQuery(titleInput);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [titleInput]);
+
+  const titleFilterActive = isOrderTitleSearchActive(titleQuery);
+  const titleHintVisible =
+    normalizeOrderTitleSearch(titleInput).length > 0 && !titleFilterActive;
 
   const qs = useMemo(() => {
     const u = new URLSearchParams();
     u.set("from", new Date(from).toISOString());
     u.set("to", new Date(to).toISOString());
     u.set("status", status);
+    if (isOrderTitleSearchActive(titleQuery)) {
+      u.set("title", normalizeOrderTitleSearch(titleQuery));
+    }
     return u.toString();
-  }, [from, to, status]);
+  }, [from, to, status, titleQuery]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,6 +85,10 @@ export function PedidosAdminList() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const emptyMessage = titleFilterActive
+    ? "Nenhum pedido encontrado para este título no período."
+    : "Nenhum pedido no período.";
 
   return (
     <div className="space-y-4">
@@ -101,6 +126,17 @@ export function PedidosAdminList() {
             ))}
           </select>
         </label>
+        <label className="min-w-[12rem] flex-1 text-sm font-black text-black">
+          Título
+          <input
+            type="search"
+            value={titleInput}
+            onChange={(e) => setTitleInput(e.target.value)}
+            placeholder={`Buscar título (mín. ${ORDER_TITLE_SEARCH_MIN_LENGTH} letras)`}
+            aria-describedby={titleHintVisible ? "pedidos-title-hint" : undefined}
+            className="mt-1 block w-full min-w-[12rem] rounded-lg border-2 border-black bg-[#fff4e8] px-2 py-1 text-[#233d4d]"
+          />
+        </label>
         <button
           type="button"
           onClick={() => void load()}
@@ -109,6 +145,15 @@ export function PedidosAdminList() {
           Atualizar
         </button>
       </div>
+
+      {titleHintVisible ? (
+        <p
+          id="pedidos-title-hint"
+          className="text-sm font-semibold text-[#233d4d]"
+        >
+          Digite pelo menos {ORDER_TITLE_SEARCH_MIN_LENGTH} caracteres para buscar.
+        </p>
+      ) : null}
 
       {err ? (
         <p
@@ -178,7 +223,7 @@ export function PedidosAdminList() {
             </tbody>
           </table>
           {rows.length === 0 ? (
-            <p className="p-6 text-center text-slate-500">Nenhum pedido no período.</p>
+            <p className="p-6 text-center text-slate-500">{emptyMessage}</p>
           ) : null}
         </div>
       )}
