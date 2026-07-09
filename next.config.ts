@@ -1,4 +1,17 @@
+import { spawnSync } from "node:child_process";
 import type { NextConfig } from "next";
+import withSerwistInit from "@serwist/next";
+
+const revision =
+  spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" }).stdout?.trim() ||
+  crypto.randomUUID();
+
+const withSerwist = withSerwistInit({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV === "development",
+  additionalPrecacheEntries: [{ url: "/~offline", revision }],
+});
 
 const nextConfig: NextConfig = {
   images: {
@@ -12,4 +25,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default withSerwist(nextConfig);
