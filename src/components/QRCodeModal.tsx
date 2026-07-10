@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { isNetworkError } from "@/utils/network";
 
 type PixPayload = {
   configured: boolean;
@@ -40,7 +41,13 @@ export function QRCodeModal({ open, onPaid, onBack, busy = false }: Props) {
         if (!cancelled) setData(j);
       })
       .catch((e: Error) => {
-        if (!cancelled) setErr(e.message);
+        if (!cancelled) {
+          setErr(
+            isNetworkError(e)
+              ? "Sem conexão. Não foi possível carregar o QR Code."
+              : e.message,
+          );
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
