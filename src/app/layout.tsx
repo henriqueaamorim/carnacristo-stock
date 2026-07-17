@@ -6,8 +6,11 @@ export const metadata: Metadata = {
   title: "Carnacristo Stock",
   description: "Vendas e estoque centralizados",
   icons: {
-    icon: [{ url: "/icon.png", type: "image/png" }],
-    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+    icon: [
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-icon.png", type: "image/png", sizes: "180x180" }],
   },
   appleWebApp: { capable: true, title: "Carnacristo Stock" },
 };

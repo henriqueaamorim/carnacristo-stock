@@ -2,7 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { ProductCard } from "@/components/ProductCard";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useProducts } from "@/hooks/useProducts";
 import { useCartStore } from "@/store/cartStore";
 import {
@@ -12,6 +14,7 @@ import {
 
 export default function NovoPedidoPage() {
   const router = useRouter();
+  const online = useOnlineStatus();
   const { data: products, isLoading, error } = useProducts();
   const orderTitle = useCartStore((s) => s.orderTitle);
   const setOrderTitle = useCartStore((s) => s.setOrderTitle);
@@ -36,6 +39,10 @@ export default function NovoPedidoPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-base font-black text-black">Novo pedido</h1>
+
+      {!online ? (
+        <OfflineBanner message="Sem conexão com a internet. Você pode navegar pelo catálogo, mas não é possível criar ou finalizar pedidos até a conexão voltar." />
+      ) : null}
 
       <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
         <div className="flex items-center justify-between border-b-2 border-black bg-[#ea5342] px-4 py-3">

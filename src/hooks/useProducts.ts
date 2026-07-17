@@ -5,9 +5,18 @@ import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ProductDTO } from "@/types";
 import { useCartStore } from "@/store/cartStore";
+import { isNetworkError } from "@/utils/network";
 
 async function fetchProducts(): Promise<ProductDTO[]> {
-  const res = await fetch("/api/produtos");
+  let res: Response;
+  try {
+    res = await fetch("/api/produtos");
+  } catch (e) {
+    if (isNetworkError(e)) {
+      throw new Error("Sem conexão. Não foi possível carregar os produtos.");
+    }
+    throw e;
+  }
   if (!res.ok) {
     const j = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(j.error || "Erro ao carregar produtos");

@@ -4,16 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { PaymentMethodSelector } from "@/components/PaymentMethodSelector";
 import { QRCodeModal } from "@/components/QRCodeModal";
 import { SaleConfirmModal } from "@/components/SaleConfirmModal";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import type { PaymentMethod } from "@/types";
 import { cartLinesToPayload, cartTotal, useCartStore } from "@/store/cartStore";
+import { isNetworkError } from "@/utils/network";
 import { validateOrderTitle } from "@/utils/validation";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const online = useOnlineStatus();
   const orderTitle = useCartStore((s) => s.orderTitle);
   const lines = useCartStore((s) => s.lines);
   const clear = useCartStore((s) => s.clear);
@@ -83,6 +87,12 @@ export default function CheckoutPage() {
             `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&method=${encodeURIComponent(paymentMethod!)}`,
           );
         }
+      } catch (e) {
+        setErr(
+          isNetworkError(e)
+            ? "Sem conexão. O pedido não foi enviado — verifique sua internet e tente novamente."
+            : "Erro inesperado ao finalizar o pedido. Tente novamente.",
+        );
       } finally {
         setBusy(false);
       }
@@ -160,6 +170,10 @@ export default function CheckoutPage() {
     <div className="space-y-6">
       <h1 className="text-base font-black text-black">Checkout</h1>
 
+      {!online ? (
+        <OfflineBanner message="Sem conexão com a internet. Não é possível finalizar ou salvar o pedido até a conexão voltar." />
+      ) : null}
+
       <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
         <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
           <h2 className="text-sm font-black uppercase tracking-wide text-black">Resumo</h2>
@@ -205,7 +219,7 @@ export default function CheckoutPage() {
           </Link>
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || !online}
             onClick={onFinalizar}
             className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
           >
@@ -214,7 +228,7 @@ export default function CheckoutPage() {
         </div>
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || !online}
           onClick={onSalvarPendente}
           className="rounded-lg border-2 border-black bg-[#fff4e8] py-3 font-black text-black hover:bg-[#f8e8d8] disabled:opacity-50"
         >
