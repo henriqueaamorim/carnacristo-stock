@@ -24,7 +24,13 @@ type OrderRow = {
   status: string;
   created_at: string;
   seller: { email: string | null; full_name: string | null } | null;
+  amountPaid?: number;
+  remainingBalance?: number;
 };
+
+function fmtBrl(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
 
 function defaultRange() {
   const to = new Date();
@@ -191,6 +197,11 @@ export function PedidosAdminList() {
                   </td>
                   <td className="p-4 font-bold text-black">
                     {formatPaymentMethod(o.payment_method)}
+                    {o.status === "pending" && (o.amountPaid ?? 0) > 0 ? (
+                      <p className="mt-0.5 text-xs font-semibold text-[#233d4d]">
+                        {fmtBrl(o.amountPaid ?? 0)} de {fmtBrl(Number(o.total_amount))} pago
+                      </p>
+                    ) : null}
                   </td>
                   <td className="p-4 font-bold text-black">
                     {Number(o.total_amount).toLocaleString("pt-BR", {

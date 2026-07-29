@@ -56,11 +56,31 @@ export async function GET(request: Request) {
     }
   }
 
+  const pendingOrderIds = (orders ?? [])
+    .filter((o) => o.status === "pending")
+    .map((o) => o.id);
+  const paidByOrder: Record<string, number> = {};
+
+  if (pendingOrderIds.length > 0) {
+    const { data: payments } = await g.supabase
+      .from("order_payments")
+      .select("order_id, amount")
+      .in("order_id", pendingOrderIds);
+    for (const p of payments ?? []) {
+      paidByOrder[p.order_id] = (paidByOrder[p.order_id] ?? 0) + Number(p.amount);
+    }
+  }
+
   return NextResponse.json(
-    (orders ?? []).map((o) => ({
-      ...o,
-      seller: sellers[o.seller_id] ?? null,
-    })),
+    (orders ?? []).map((o) => {
+      const amountPaid = paidByOrder[o.id] ?? 0;
+      return {
+        ...o,
+        seller: sellers[o.seller_id] ?? null,
+        amountPaid,
+        remainingBalance: Number(o.total_amount) - amountPaid,
+      };
+    }),
   );
 }
 
@@ -94,12 +114,18 @@ export async function POST(request: Request) {
     typeof body === "object" && body !== null && "paymentMethod" in body
       ? (body as { paymentMethod: unknown }).paymentMethod
       : null;
+  const partialAmountRaw =
+    typeof body === "object" && body !== null && "partialAmount" in body
+      ? (body as { partialAmount: unknown }).partialAmount
+      : null;
   const items =
     typeof body === "object" && body !== null && "items" in body
       ? (body as { items: unknown }).items
       : null;
 
-  if (deferredPayment && paymentMethod != null) {
+  const hasPartialAmount = partialAmountRaw != null;
+
+  if (deferredPayment && (paymentMethod != null || hasPartialAmount)) {
     return NextResponse.json(
       { error: "Não envie forma de pagamento em pedido pendente." },
       { status: 400 },
@@ -111,6 +137,18 @@ export async function POST(request: Request) {
       { error: "Forma de pagamento inválida" },
       { status: 400 },
     );
+  }
+
+  let partialAmount: number | null = null;
+  if (hasPartialAmount) {
+    const n = Number(partialAmountRaw);
+    if (!Number.isFinite(n) || n <= 0) {
+      return NextResponse.json(
+        { error: "Valor de pagamento inválido." },
+        { status: 400 },
+      );
+    }
+    partialAmount = n;
   }
 
   const parsed = parseOrderItems(items);
@@ -125,6 +163,7 @@ export async function POST(request: Request) {
     p_title: titleResult.value,
     p_payment_method: deferredPayment ? null : paymentMethod,
     p_items: parsed.items,
+    p_partial_amount: partialAmount,
   });
 
   if (error) {
@@ -132,15 +171,27 @@ export async function POST(request: Request) {
     if (msg.includes("Estoque insuficiente")) {
       return NextResponse.json({ error: msg }, { status: 409 });
     }
+    if (msg.includes("invalid_title_min_length")) {
+      return NextResponse.json(
+        { error: "O título do pedido deve ter no mínimo 5 caracteres." },
+        { status: 400 },
+      );
+    }
     if (msg.includes("invalid_title")) {
       return NextResponse.json(
         { error: "O campo título do pedido está vazio." },
         { status: 400 },
       );
     }
-    if (msg.includes("invalid_title_min_length")) {
+    if (msg.includes("payment_exceeds_balance")) {
       return NextResponse.json(
-        { error: "O título do pedido deve ter no mínimo 5 caracteres." },
+        { error: "Valor pago não pode ser maior que o total do pedido." },
+        { status: 409 },
+      );
+    }
+    if (msg.includes("invalid_payment_amount")) {
+      return NextResponse.json(
+        { error: "Valor de pagamento inválido." },
         { status: 400 },
       );
     }

@@ -15,6 +15,8 @@ type BrlPriceInputProps = {
   required?: boolean;
   className?: string;
   placeholder?: string;
+  /** Chamado a cada alteração com o valor numérico digitado (ou null se vazio). */
+  onAmountChange?: (amount: number | null) => void;
 };
 
 export function BrlPriceInput({
@@ -23,6 +25,7 @@ export function BrlPriceInput({
   required = false,
   className,
   placeholder = "R$ 0,00",
+  onAmountChange,
 }: BrlPriceInputProps) {
   const [digits, setDigits] = useState(() => {
     if (defaultValue == null || defaultValue <= 0) return "";
@@ -35,10 +38,14 @@ export function BrlPriceInput({
   const apiValue =
     amount != null && amount > 0 ? amountToApiPrice(amount) : "";
 
-  const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const next = e.target.value.replace(/\D/g, "").slice(0, MAX_DIGITS);
-    setDigits(next);
-  }, []);
+  const onChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const next = e.target.value.replace(/\D/g, "").slice(0, MAX_DIGITS);
+      setDigits(next);
+      onAmountChange?.(digitsToAmount(next));
+    },
+    [onAmountChange],
+  );
 
   return (
     <>

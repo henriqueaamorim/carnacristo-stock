@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { BrlPriceInput } from "@/components/BrlPriceInput";
 import { PaymentMethodSelector } from "@/components/PaymentMethodSelector";
 import type { PaymentMethod } from "@/types";
 import { formatOrderStatus } from "@/utils/orderStatus";
@@ -17,7 +18,18 @@ type Item = {
   product_name: string | null;
 };
 
+type PaymentRow = {
+  id: string;
+  amount: number;
+  payment_method: PaymentMethod;
+  created_at: string;
+};
+
 type ProductOpt = { id: string; name: string; price: number; stock_quantity: number };
+
+function fmtBrl(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
 
 export default function AdminPedidoDetalhePage() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +50,9 @@ export default function AdminPedidoDetalhePage() {
   const [seller, setSeller] = useState<{ email: string | null } | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [products, setProducts] = useState<ProductOpt[]>([]);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [remainingBalance, setRemainingBalance] = useState(0);
 
   const [editTitle, setEditTitle] = useState("");
   const [editPay, setEditPay] = useState<PaymentMethod | null>(null);
@@ -45,6 +60,9 @@ export default function AdminPedidoDetalhePage() {
     [],
   );
   const [busy, setBusy] = useState(false);
+
+  const [payAmount, setPayAmount] = useState<number | null>(null);
+  const [payMethod, setPayMethod] = useState<PaymentMethod | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -56,15 +74,22 @@ export default function AdminPedidoDetalhePage() {
       order?: typeof order;
       seller?: typeof seller;
       items?: Item[];
+      payments?: PaymentRow[];
+      amountPaid?: number;
+      remainingBalance?: number;
     };
     if (!res.ok) {
       setErr(body.error || "Erro ao carregar");
       setOrder(null);
       setItems([]);
+      setPayments([]);
     } else {
       setOrder(body.order ?? null);
       setSeller(body.seller ?? null);
       setItems(body.items ?? []);
+      setPayments(body.payments ?? []);
+      setAmountPaid(body.amountPaid ?? 0);
+      setRemainingBalance(body.remainingBalance ?? 0);
       if (body.order) {
         setEditTitle(body.order.title);
         setEditPay(
@@ -123,6 +148,45 @@ export default function AdminPedidoDetalhePage() {
     if (!res.ok) setErr(body.error || "Erro ao alterar forma de pagamento");
     else {
       setMsg("Forma de pagamento atualizada.");
+      await load();
+      router.refresh();
+    }
+    setBusy(false);
+  }
+
+  async function registrarPagamento(e: React.FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    if (!payMethod) {
+      setErr("Selecione a forma de pagamento.");
+      return;
+    }
+    if (payAmount == null || payAmount <= 0) {
+      setErr("Informe o valor pago.");
+      return;
+    }
+    if (payAmount > remainingBalance) {
+      setErr("O valor não pode ser maior que o saldo restante.");
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    setMsg(null);
+    const res = await fetch(`/api/pedidos/${id}/pagamentos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: payAmount, paymentMethod: payMethod }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { error?: string; status?: string };
+    if (!res.ok) setErr(body.error || "Erro ao registrar pagamento");
+    else {
+      setMsg(
+        body.status === "completed"
+          ? "Pagamento registrado. Pedido finalizado!"
+          : "Pagamento registrado. Ainda há saldo pendente.",
+      );
+      setPayAmount(null);
+      setPayMethod(null);
       await load();
       router.refresh();
     }
@@ -259,7 +323,56 @@ export default function AdminPedidoDetalhePage() {
             currency: "BRL",
           })}
         </p>
+        {order.status === "pending" && amountPaid > 0 ? (
+          <p className="mt-1 text-sm font-semibold text-[#233d4d]">
+            Pago: <span className="font-black text-black">{fmtBrl(amountPaid)}</span> ·
+            Restante:{" "}
+            <span className="font-black text-black">{fmtBrl(remainingBalance)}</span>
+          </p>
+        ) : null}
       </section>
+
+      {payments.length > 0 ? (
+        <section className="rounded-[1.4rem] border-2 border-black bg-[#eab660] p-4 shadow-[6px_6px_0_#000]">
+          <h2 className="mb-2 font-black text-black">Pagamentos registrados</h2>
+          <ul className="space-y-1 text-sm text-[#233d4d]">
+            {payments.map((p) => (
+              <li key={p.id}>
+                {fmtBrl(Number(p.amount))} — {formatPaymentMethod(p.payment_method)} —{" "}
+                {new Date(p.created_at).toLocaleString("pt-BR")}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {order.status === "pending" && remainingBalance > 0 ? (
+        <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+          <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
+            <h2 className="font-black uppercase tracking-wide text-black">
+              Registrar pagamento
+            </h2>
+          </div>
+          <form onSubmit={registrarPagamento} className="space-y-4 p-6">
+            <label className="block text-sm font-black text-black">
+              Valor pago
+              <BrlPriceInput
+                name="payAmount"
+                onAmountChange={setPayAmount}
+                className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+              />
+            </label>
+            <PaymentMethodSelector value={payMethod} onChange={setPayMethod} />
+            <button
+              type="submit"
+              disabled={busy}
+              className="rounded-lg border-2 border-black bg-[#abcf85] px-4 py-2 font-black text-black disabled:opacity-50"
+            >
+              {busy ? "Processando…" : "Registrar pagamento"}
+            </button>
+          </form>
+        </section>
+      ) : null}
 
       {order.status === "pending" ? (
         <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
