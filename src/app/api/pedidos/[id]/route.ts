@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { isPaymentMethod, parseOrderItems } from "@/lib/order-items";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireAdmin, requireSession } from "@/lib/require-admin";
 import { validateOrderTitle } from "@/utils/validation";
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, ctx: Ctx) {
-  const g = await requireAdmin();
+  const g = await requireSession();
   if (!g.ok) return g.response;
 
   const { id } = await ctx.params;
@@ -24,6 +24,10 @@ export async function GET(_request: Request, ctx: Ctx) {
   }
   if (!order) {
     return NextResponse.json({ error: "Pedido não encontrado" }, { status: 404 });
+  }
+
+  if (g.role !== "admin" && order.seller_id !== g.userId) {
+    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
 
   const { data: seller } = await g.supabase
@@ -54,6 +58,18 @@ export async function GET(_request: Request, ctx: Ctx) {
     }
   }
 
+  const { data: payments, error: pe } = await g.supabase
+    .from("order_payments")
+    .select("id, amount, payment_method, created_at")
+    .eq("order_id", id)
+    .order("created_at");
+
+  if (pe) {
+    return NextResponse.json({ error: pe.message }, { status: 500 });
+  }
+
+  const amountPaid = (payments ?? []).reduce((sum, p) => sum + Number(p.amount), 0);
+
   return NextResponse.json({
     order,
     seller,
@@ -61,6 +77,9 @@ export async function GET(_request: Request, ctx: Ctx) {
       ...i,
       product_name: products[i.product_id]?.name ?? null,
     })),
+    payments: payments ?? [],
+    amountPaid,
+    remainingBalance: Number(order.total_amount) - amountPaid,
   });
 }
 

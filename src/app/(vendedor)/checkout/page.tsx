@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
+import { BrlPriceInput } from "@/components/BrlPriceInput";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { PaymentMethodSelector } from "@/components/PaymentMethodSelector";
 import { QRCodeModal } from "@/components/QRCodeModal";
@@ -31,6 +32,12 @@ export default function CheckoutPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const [partialMode, setPartialMode] = useState(false);
+  const [partialPaymentMethod, setPartialPaymentMethod] =
+    useState<PaymentMethod | null>(null);
+  const [partialAmount, setPartialAmount] = useState<number | null>(null);
+  const [partialConfirmOpen, setPartialConfirmOpen] = useState(false);
+
   useEffect(() => {
     const titleResult = validateOrderTitle(orderTitle);
     if (!titleResult.ok) {
@@ -39,9 +46,17 @@ export default function CheckoutPage() {
   }, [orderTitle, router]);
 
   const submitOrder = useCallback(
-    async (opts: { deferred?: boolean } = {}) => {
+    async (
+      opts: {
+        deferred?: boolean;
+        partialAmount?: number;
+        partialPaymentMethod?: PaymentMethod;
+      } = {},
+    ) => {
       const deferred = opts.deferred === true;
-      if (!deferred && !paymentMethod) {
+      const isPartial = opts.partialAmount != null;
+      const effectiveMethod = isPartial ? opts.partialPaymentMethod! : paymentMethod;
+      if (!deferred && !effectiveMethod) {
         setErr("Selecione a forma de pagamento.");
         return;
       }
@@ -61,7 +76,9 @@ export default function CheckoutPage() {
             title: titleResult.value,
             ...(deferred
               ? { deferredPayment: true }
-              : { paymentMethod }),
+              : isPartial
+                ? { paymentMethod: effectiveMethod, partialAmount: opts.partialAmount }
+                : { paymentMethod: effectiveMethod }),
             items: cartLinesToPayload(lines),
           }),
         });
@@ -78,13 +95,17 @@ export default function CheckoutPage() {
         const display = String(body.order_id_display ?? "");
         const total = Number(body.total_amount ?? 0);
         clear();
-        if (deferred) {
+        if (isPartial) {
+          router.push(
+            `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&pending=1&partial=1&paid=${encodeURIComponent(String(opts.partialAmount))}&method=${encodeURIComponent(effectiveMethod!)}`,
+          );
+        } else if (deferred) {
           router.push(
             `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&pending=1`,
           );
         } else {
           router.push(
-            `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&method=${encodeURIComponent(paymentMethod!)}`,
+            `/sucesso?display=${encodeURIComponent(display)}&total=${encodeURIComponent(String(total))}&method=${encodeURIComponent(effectiveMethod!)}`,
           );
         }
       } catch (e) {
@@ -162,7 +183,43 @@ export default function CheckoutPage() {
     setPixOpen(false);
   }
 
+  function onTogglePartialMode() {
+    setErr(null);
+    setPartialMode((v) => !v);
+  }
+
+  function onFinalizarParcial() {
+    if (!validateCheckout()) return;
+    if (!partialPaymentMethod) {
+      setErr("Selecione a forma de pagamento do valor parcial.");
+      return;
+    }
+    if (partialAmount == null || partialAmount <= 0) {
+      setErr("Informe o valor pago pelo cliente.");
+      return;
+    }
+    if (partialAmount >= total) {
+      setErr("O valor parcial deve ser menor que o total do pedido.");
+      return;
+    }
+    setPartialConfirmOpen(true);
+  }
+
+  function onConfirmPartial() {
+    setPartialConfirmOpen(false);
+    void submitOrder({
+      partialAmount: partialAmount!,
+      partialPaymentMethod: partialPaymentMethod!,
+    });
+  }
+
+  function onPartialConfirmBack() {
+    setPartialConfirmOpen(false);
+  }
+
   const total = cartTotal(lines);
+  const remainingPartial =
+    partialAmount != null ? Math.max(0, total - partialAmount) : null;
   const titleResult = validateOrderTitle(orderTitle);
   const displayTitle = titleResult.ok ? titleResult.value : "—";
 
@@ -199,6 +256,58 @@ export default function CheckoutPage() {
       </section>
 
       <PaymentMethodSelector value={paymentMethod} onChange={setPaymentMethod} />
+
+      <section className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
+        <button
+          type="button"
+          onClick={onTogglePartialMode}
+          className="flex w-full items-center justify-between border-b-2 border-black bg-[#ea5342] px-4 py-3 text-left"
+        >
+          <span className="text-sm font-black uppercase tracking-wide text-black">
+            Pagamento parcial
+          </span>
+          <span className="text-xs font-black text-black">
+            {partialMode ? "Ocultar" : "Usar"}
+          </span>
+        </button>
+        {partialMode ? (
+          <div className="space-y-4 p-4">
+            <p className="text-xs font-semibold text-[#233d4d]">
+              Informe quanto o cliente vai pagar agora. O restante fica
+              pendente e pode ser complementado depois.
+            </p>
+            <label className="block text-sm font-black text-black">
+              Valor pago agora
+              <BrlPriceInput
+                name="partialAmount"
+                onAmountChange={setPartialAmount}
+                className="mt-1 w-full rounded-lg border-2 border-black bg-[#fff4e8] px-3 py-2 text-[#233d4d]"
+              />
+            </label>
+            {remainingPartial != null ? (
+              <p className="text-sm font-black text-black">
+                Restante:{" "}
+                {remainingPartial.toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                })}
+              </p>
+            ) : null}
+            <PaymentMethodSelector
+              value={partialPaymentMethod}
+              onChange={setPartialPaymentMethod}
+            />
+            <button
+              type="button"
+              disabled={busy || !online}
+              onClick={onFinalizarParcial}
+              className="w-full rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {busy ? "Processando…" : "Registrar pagamento parcial"}
+            </button>
+          </div>
+        ) : null}
+      </section>
 
       {err ? (
         <p
@@ -269,6 +378,20 @@ export default function CheckoutPage() {
         total={total}
         showPayment={false}
       />
+
+      {partialPaymentMethod ? (
+        <SaleConfirmModal
+          open={partialConfirmOpen}
+          onConfirm={onConfirmPartial}
+          onBack={onPartialConfirmBack}
+          busy={busy}
+          title={displayTitle}
+          lines={lines}
+          total={total}
+          paymentMethod={partialPaymentMethod}
+          partialAmount={partialAmount ?? 0}
+        />
+      ) : null}
     </div>
   );
 }

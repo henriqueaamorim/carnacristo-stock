@@ -16,6 +16,8 @@ type Props = {
   paymentMethod?: PaymentMethod;
   /** Quando false, confirma pedido pendente de pagamento (sem método). */
   showPayment?: boolean;
+  /** Quando informado, exibe "pago agora" / "restante" em vez do pagamento total. */
+  partialAmount?: number;
 };
 
 export function SaleConfirmModal({
@@ -28,6 +30,7 @@ export function SaleConfirmModal({
   total,
   paymentMethod,
   showPayment = true,
+  partialAmount,
 }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const backBtnRef = useRef<HTMLButtonElement>(null);
@@ -67,19 +70,37 @@ export function SaleConfirmModal({
     return undefined;
   }, [open]);
 
+  const isPartial = partialAmount != null;
   const totalFmt = total.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
   });
+  const partialFmt = isPartial
+    ? partialAmount!.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+    : null;
+  const remainingFmt = isPartial
+    ? (total - partialAmount!).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      })
+    : null;
   const paymentLabel =
     paymentMethod != null ? PAYMENT_METHOD_LABELS[paymentMethod] : null;
-  const dialogTitle = showPayment ? "Confirmar venda" : "Pendente de pagamento";
-  const confirmQuestion = showPayment
-    ? "Confirmar venda deste pedido?"
-    : "Salvar pedido sem pagamento agora?";
-  const confirmHint = showPayment
-    ? null
-    : "O pagamento será registrado depois pelo administrador.";
+  const dialogTitle = isPartial
+    ? "Pagamento parcial"
+    : showPayment
+      ? "Confirmar venda"
+      : "Pendente de pagamento";
+  const confirmQuestion = isPartial
+    ? "Confirmar pagamento parcial deste pedido?"
+    : showPayment
+      ? "Confirmar venda deste pedido?"
+      : "Salvar pedido sem pagamento agora?";
+  const confirmHint = isPartial
+    ? "O restante ficará pendente e poderá ser pago depois."
+    : showPayment
+      ? null
+      : "O pagamento será registrado depois pelo administrador.";
 
   return (
     <dialog
@@ -141,6 +162,16 @@ export function SaleConfirmModal({
             <p className="mt-2 text-lg font-black text-black">
               Total: <span className="font-black">{totalFmt}</span>
             </p>
+            {isPartial ? (
+              <>
+                <p className="mt-2 text-sm font-black text-[#233d4d]">
+                  Pago agora: <span className="text-black">{partialFmt}</span>
+                </p>
+                <p className="mt-1 text-sm font-black text-[#233d4d]">
+                  Restante: <span className="text-black">{remainingFmt}</span>
+                </p>
+              </>
+            ) : null}
             {showPayment && paymentLabel ? (
               <p className="mt-2 text-sm font-black text-[#233d4d]">
                 Pagamento:{" "}
@@ -154,13 +185,21 @@ export function SaleConfirmModal({
                 onClick={onConfirm}
                 disabled={busy}
                 aria-label={
-                  showPayment
-                    ? "Confirmar venda e concluir pedido"
-                    : "Salvar pedido pendente de pagamento"
+                  isPartial
+                    ? "Confirmar pagamento parcial do pedido"
+                    : showPayment
+                      ? "Confirmar venda e concluir pedido"
+                      : "Salvar pedido pendente de pagamento"
                 }
                 className="flex-1 rounded-lg border-2 border-black bg-[#abcf85] py-3 font-black text-black hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busy ? "Processando…" : showPayment ? "Confirmar" : "Salvar pendente"}
+                {busy
+                  ? "Processando…"
+                  : isPartial
+                    ? "Confirmar parcial"
+                    : showPayment
+                      ? "Confirmar"
+                      : "Salvar pendente"}
               </button>
               <button
                 ref={backBtnRef}

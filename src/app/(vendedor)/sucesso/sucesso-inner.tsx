@@ -17,6 +17,8 @@ export default function SucessoInner() {
   const total = params.get("total");
   const method = params.get("method") ?? "—";
   const isPending = params.get("pending") === "1";
+  const isPartial = params.get("partial") === "1";
+  const paid = params.get("paid");
 
   const totalFmt =
     total != null && !Number.isNaN(Number(total))
@@ -26,14 +28,29 @@ export default function SucessoInner() {
         })
       : total;
 
+  const paidFmt =
+    paid != null && !Number.isNaN(Number(paid))
+      ? Number(paid).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+      : paid;
+
+  const remainingFmt =
+    paid != null && total != null && !Number.isNaN(Number(paid)) && !Number.isNaN(Number(total))
+      ? (Number(total) - Number(paid)).toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        })
+      : null;
+
   return (
     <div className="space-y-6 text-center">
       <div className="overflow-hidden rounded-[1.4rem] border-2 border-black bg-[#eab660] shadow-[6px_6px_0_#000]">
         <div className="border-b-2 border-black bg-[#ea5342] px-4 py-3">
           <p className="text-sm font-black uppercase tracking-wide text-black">
-            {isPending
-              ? "Pedido registrado — pagamento pendente"
-              : "Pedido finalizado com sucesso"}
+            {isPartial
+              ? "Pagamento parcial registrado"
+              : isPending
+                ? "Pedido registrado — pagamento pendente"
+                : "Pedido finalizado com sucesso"}
           </p>
         </div>
         <div className="p-8">
@@ -41,7 +58,18 @@ export default function SucessoInner() {
         <p className="mt-4 text-[#233d4d]">
           Total: <span className="font-black">{totalFmt}</span>
         </p>
-        {!isPending ? (
+        {isPartial ? (
+          <>
+            <p className="mt-1 text-[#233d4d]">
+              Pago agora: <span className="font-black">{paidFmt}</span>{" "}
+              (<span className="font-black">{method}</span>)
+            </p>
+            <p className="mt-1 text-sm font-semibold text-[#233d4d]">
+              Restante: {remainingFmt} — pode ser complementado depois em
+              Meus pedidos.
+            </p>
+          </>
+        ) : !isPending ? (
           <p className="mt-1 text-[#233d4d]">
             Método: <span className="font-black">{method}</span>
           </p>

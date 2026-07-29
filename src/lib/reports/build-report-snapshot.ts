@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   normalizeReportPaymentMethod,
   PAYMENT_METHODS,
+  PENDING_PAYMENT_KEY,
   REPORT_PAYMENT_KEYS,
 } from "@/lib/reports/payment-labels";
 import type { PaymentMethod } from "@/types";
@@ -163,6 +164,30 @@ export async function buildReportSnapshot(
     }
   }
 
+  // Pagamentos parciais: quando um pedido tem linhas em order_payments, sua
+  // receita é dividida entre os métodos reais usados e o saldo ainda em
+  // aberto (pendente_pagamento), em vez de cair inteira no payment_method
+  // único do pedido.
+  const paidByOrderMethod = new Map<string, Map<string, number>>();
+  const totalPaidByOrder = new Map<string, number>();
+
+  if (orderIds.length > 0) {
+    const { data: paymentsRaw, error: paymentsError } = await supabase
+      .from("order_payments")
+      .select("order_id, payment_method, amount")
+      .in("order_id", orderIds);
+
+    if (paymentsError) return { data: null, error: paymentsError.message };
+
+    for (const p of paymentsRaw ?? []) {
+      const amt = Number(p.amount);
+      const methodMap = paidByOrderMethod.get(p.order_id) ?? new Map<string, number>();
+      methodMap.set(p.payment_method, (methodMap.get(p.payment_method) ?? 0) + amt);
+      paidByOrderMethod.set(p.order_id, methodMap);
+      totalPaidByOrder.set(p.order_id, (totalPaidByOrder.get(p.order_id) ?? 0) + amt);
+    }
+  }
+
   const sellerIdsInScope = new Set(orders.map((o) => o.seller_id));
   if (sellerId) sellerIdsInScope.add(sellerId);
 
@@ -191,6 +216,11 @@ export async function buildReportSnapshot(
     qtyByOrder.set(item.order_id, (qtyByOrder.get(item.order_id) ?? 0) + item.quantity);
   }
 
+  const addRevenue = (map: Map<string, SellerMetrics>, key: string, amount: number) => {
+    const prev = map.get(key) ?? { revenue: 0, units: 0, orders: 0 };
+    map.set(key, { ...prev, revenue: prev.revenue + amount });
+  };
+
   let totalRevenue = 0;
   let totalUnits = 0;
   const bySeller = new Map<string, SellerMetrics>();
@@ -211,13 +241,16 @@ export async function buildReportSnapshot(
       orders: sellerPrev.orders + 1,
     });
 
+    // Unidades/pedidos de cada método continuam atribuídos a um único bucket
+    // (o payment_method "de fechamento" do pedido), para não somar mais que
+    // o total real de pedidos/itens do período.
     const paymentPrev = byPayment.get(order.payment_method) ?? {
       revenue: 0,
       units: 0,
       orders: 0,
     };
     byPayment.set(order.payment_method, {
-      revenue: paymentPrev.revenue + revenue,
+      ...paymentPrev,
       units: paymentPrev.units + units,
       orders: paymentPrev.orders + 1,
     });
@@ -230,11 +263,30 @@ export async function buildReportSnapshot(
       orders: 0,
     };
     sellerPaymentMap.set(order.payment_method, {
-      revenue: methodPrev.revenue + revenue,
+      ...methodPrev,
       units: methodPrev.units + units,
       orders: methodPrev.orders + 1,
     });
     paymentBySellerMap.set(order.seller_id, sellerPaymentMap);
+
+    // Receita: dividida entre os métodos realmente usados quando o pedido
+    // tem pagamentos parciais registrados; senão, comportamento de sempre
+    // (100% no payment_method único do pedido).
+    const paidMap = paidByOrderMethod.get(order.id);
+    if (paidMap && paidMap.size > 0) {
+      for (const [method, amount] of paidMap) {
+        addRevenue(byPayment, method, amount);
+        addRevenue(sellerPaymentMap, method, amount);
+      }
+      const remaining = revenue - (totalPaidByOrder.get(order.id) ?? 0);
+      if (remaining > 0.005) {
+        addRevenue(byPayment, PENDING_PAYMENT_KEY, remaining);
+        addRevenue(sellerPaymentMap, PENDING_PAYMENT_KEY, remaining);
+      }
+    } else {
+      addRevenue(byPayment, order.payment_method, revenue);
+      addRevenue(sellerPaymentMap, order.payment_method, revenue);
+    }
   }
 
   for (const item of items) {
